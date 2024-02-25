@@ -2,6 +2,7 @@ import com.clickhouse.jdbc.ClickHouseDataSource
 import dev.inmo.tgbotapi.types.chat.CommonUser
 import kotliquery.queryOf
 import kotliquery.sessionOf
+import org.telegram.telegrambots.meta.api.objects.User
 import java.sql.SQLException
 import javax.sql.DataSource
 
@@ -13,12 +14,49 @@ class Clickhouse {
         throw RuntimeException(e)
     }
 
-    fun log(text: String, isInline: Boolean, user: CommonUser?, userId: Long) {
+    fun log(text: String, isInline: Boolean, user: CommonUser?, botName: String) {
         user?.let {
-            sessionOf(dataSource).execute(
-                //language=GenericSQL
-                queryOf(
-                    """
+            insert(
+                it.id.chatId,
+                if (it.username != null) it.username!!.full else null,
+                it.firstName,
+                it.lastName,
+                it.isPremium,
+                isInline,
+                it.languageCode,
+                text,
+                botName)
+        }
+    }
+
+    fun log(text: String, isInline: Boolean, user: User?, botName: String){
+        user?.let {
+            insert(
+                it.id,
+                if (it.userName != null) it.userName else null,
+                it.firstName,
+                it.lastName,
+                it.isPremium,
+                isInline,
+                it.languageCode,
+                text,
+                botName)
+        }
+    }
+
+    private fun insert(userId: Long,
+                       username: String?,
+                       firstName: String?,
+                       lastName: String?,
+                       isPremium: Boolean,
+                       isInline: Boolean,
+                       languageCode: String?,
+                       text: String,
+                       botName: String){
+        sessionOf(dataSource).execute(
+            //language=GenericSQL
+            queryOf(
+                """
            INSERT INTO default.bot_log (
                 date_time,
                 bot_name,
@@ -32,7 +70,7 @@ class Clickhouse {
                 text
            ) VALUES (
                 now(),
-                'metarBot',
+                :bot_nae,
                 :user_id,
                 array(:usernames),
                 :first_name,
@@ -43,17 +81,18 @@ class Clickhouse {
                 :text
            ) 
         """, mapOf(
-                        "user_id" to userId,
-                        "usernames" to if (it.username != null) it.username!!.full else null,
-                        "first_name" to it.firstName,
-                        "last_name" to it.lastName,
-                        "is_premium" to it.isPremium,
-                        "is_inline" to isInline,
-                        "lang" to it.languageCode,
-                        "text" to text
-                    )
+                    "bot_name" to botName,
+                    "user_id" to userId,
+                    "usernames" to username,
+                    "first_name" to firstName,
+                    "last_name" to lastName,
+                    "is_premium" to isPremium,
+                    "is_inline" to isInline,
+                    "lang" to languageCode,
+                    "text" to text
                 )
             )
-        }
+        )
     }
+
 }

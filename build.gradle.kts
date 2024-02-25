@@ -12,7 +12,12 @@ repositories {
 }
 
 dependencies {
-    implementation("dev.inmo:tgbotapi:10.1.0")
+    implementation("org.telegram:telegrambots:6.9.7.1"){
+        isTransitive = true
+    }
+    implementation("dev.inmo:tgbotapi:10.1.0") {
+        isTransitive = true
+    }
     implementation("com.clickhouse:clickhouse-jdbc:0.6.0")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
     implementation("org.lz4:lz4-java:1.8.0")
