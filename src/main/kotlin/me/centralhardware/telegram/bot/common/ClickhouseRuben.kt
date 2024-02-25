@@ -8,10 +8,10 @@ class ClickhouseRuben: BaseClickhouse() {
         user?.let {
             insert(
                 it.id,
-                if (it.userName != null) "@${it.userName}" else null,
+                it.userName,
                 it.firstName,
                 it.lastName,
-                it.isPremium,
+                it.isPremium ?: false,
                 isInline,
                 it.languageCode,
                 text,

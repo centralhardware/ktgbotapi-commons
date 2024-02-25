@@ -8,7 +8,7 @@ class ClickhouseKt: BaseClickhouse() {
         user?.let {
             insert(
                 it.id.chatId,
-                if (it.username != null) it.username!!.full else null,
+                it.username?.full,
                 it.firstName,
                 it.lastName,
                 it.isPremium,
