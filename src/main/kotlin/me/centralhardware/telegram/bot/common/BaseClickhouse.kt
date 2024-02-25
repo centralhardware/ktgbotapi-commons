@@ -1,60 +1,30 @@
 package me.centralhardware.telegram.bot.common
 
 import com.clickhouse.jdbc.ClickHouseDataSource
-import dev.inmo.tgbotapi.types.chat.CommonUser
 import kotliquery.queryOf
 import kotliquery.sessionOf
-import org.telegram.telegrambots.meta.api.objects.User
 import java.sql.SQLException
 import javax.sql.DataSource
 
-class Clickhouse {
+open class BaseClickhouse {
 
-    val dataSource: DataSource = try {
+    protected val dataSource: DataSource = try {
         ClickHouseDataSource(System.getenv("CLICKHOUSE_URL"))
     } catch (e: SQLException) {
         throw RuntimeException(e)
     }
 
-    fun log(text: String, isInline: Boolean, user: CommonUser?, botName: String) {
-        user?.let {
-            insert(
-                it.id.chatId,
-                if (it.username != null) it.username!!.full else null,
-                it.firstName,
-                it.lastName,
-                it.isPremium,
-                isInline,
-                it.languageCode,
-                text,
-                botName)
-        }
-    }
-
-    fun log(text: String, isInline: Boolean, user: User?, botName: String){
-        user?.let {
-            insert(
-                it.id,
-                if (it.userName != null) "@${it.userName}" else null,
-                it.firstName,
-                it.lastName,
-                it.isPremium,
-                isInline,
-                it.languageCode,
-                text,
-                botName)
-        }
-    }
-
-    private fun insert(userId: Long,
-                       username: String?,
-                       firstName: String?,
-                       lastName: String?,
-                       isPremium: Boolean,
-                       isInline: Boolean,
-                       languageCode: String?,
-                       text: String,
-                       botName: String){
+    protected fun insert(
+        userId: Long,
+        username: String?,
+        firstName: String?,
+        lastName: String?,
+        isPremium: Boolean,
+        isInline: Boolean,
+        languageCode: String?,
+        text: String,
+        botName: String
+    ) {
         sessionOf(dataSource).execute(
             //language=GenericSQL
             queryOf(
@@ -96,5 +66,6 @@ class Clickhouse {
             )
         )
     }
+
 
 }
