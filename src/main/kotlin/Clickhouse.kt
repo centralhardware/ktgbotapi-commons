@@ -19,7 +19,7 @@ class Clickhouse {
                 //language=GenericSQL
                 queryOf(
                     """
-           INSERT INTO bot_log (
+           INSERT INTO default.bot_log (
                 date_time,
                 bot_name,
                 user_id,
