@@ -70,7 +70,7 @@ class Clickhouse {
                 text
            ) VALUES (
                 now(),
-                :bot_nae,
+                :bot_name,
                 :user_id,
                 array(:usernames),
                 :first_name,
