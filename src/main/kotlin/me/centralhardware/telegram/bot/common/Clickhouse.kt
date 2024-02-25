@@ -1,3 +1,5 @@
+package me.centralhardware.telegram.bot.common
+
 import com.clickhouse.jdbc.ClickHouseDataSource
 import dev.inmo.tgbotapi.types.chat.CommonUser
 import kotliquery.queryOf
