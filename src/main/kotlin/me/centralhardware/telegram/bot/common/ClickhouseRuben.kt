@@ -27,7 +27,7 @@ class ClickhouseRuben: BaseClickhouse() {
         }
     }
 
-    fun log(update: Update, isInline: Boolean,  botName: String){
+    fun log(update: Update,botName: String){
         update.user()?.let {
             insert(
                 it.id,
@@ -35,7 +35,7 @@ class ClickhouseRuben: BaseClickhouse() {
                 it.firstName,
                 it.lastName,
                 it.isPremium ?: false,
-                isInline,
+                update.hasInlineQuery(),
                 it.languageCode,
                 update.text(),
                 botName)
