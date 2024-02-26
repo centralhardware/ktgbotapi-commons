@@ -38,7 +38,6 @@ publishing {
             groupId = "me.centralhardware"
             artifactId = "bot-common"
             version = "1.0-SNAPSHOT"
-
             from(components["java"])
         }
     }
