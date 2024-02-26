@@ -8,7 +8,7 @@ import javax.sql.DataSource
 
 open class BaseClickhouse {
 
-    protected val dataSource: DataSource = try {
+    private val dataSource: DataSource = try {
         ClickHouseDataSource(System.getenv("CLICKHOUSE_URL"))
     } catch (e: SQLException) {
         throw RuntimeException(e)
