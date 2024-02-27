@@ -22,6 +22,7 @@ class ClickhouseRuben: BaseClickhouse() {
             this.hasVoice() -> "voice: " + this.voice.fileId
             this.hasVideoNote() -> "videoNote: " + this.videoNote.fileId
             this.hasSuccessfulPayment() -> "successfullPayment: :" + this.successfulPayment.telegramPaymentChargeId
+            this.hasSticker() -> "sticker: ${this.sticker.emoji} ${this.sticker.setName}$"
             else -> ""
         }
     }
