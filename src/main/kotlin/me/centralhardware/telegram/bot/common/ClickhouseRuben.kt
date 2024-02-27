@@ -8,20 +8,20 @@ class ClickhouseRuben: BaseClickhouse() {
 
     private fun Message.text(): String{
         return when{
-            this.hasText() -> "text" + this.text
-            this.hasDice() -> "dice" + this.dice.emoji
-            this.hasPoll() -> "poll" + this.poll.question
-            this.hasDocument() -> "document" + this.document.fileId
-            this.hasAudio() -> "audio" + this.audio.fileId
-            this.hasAnimation() -> "animation" + this.animation.fileId
+            this.hasText() -> "text: " + this.text
+            this.hasDice() -> "dice: " + this.dice.emoji
+            this.hasPoll() -> "poll: " + this.poll.question
+            this.hasDocument() -> "document: " + this.document.fileId
+            this.hasAudio() -> "audio: " + this.audio.fileId
+            this.hasAnimation() -> "animation: " + this.animation.fileId
             this.hasContact() -> "contact: ${this.contact.userId} ${this.contact.firstName} ${this.contact.lastName}"
             this.hasInvoice() -> "invoice: ${this.invoice.title} ${this.invoice.description} ${this.invoice.currency} ${this.invoice.totalAmount}"
             this.hasLocation() -> "location: ${this.location.latitude} ${this.location.longitude} ${this.location.heading}"
-            this.hasPhoto() -> "photo" + this.photo.sortedBy { it.fileSize }.map { it.fileId }.first().orEmpty()
+            this.hasPhoto() -> "photo: " + this.photo.sortedBy { it.fileSize }.map { it.fileId }.first().orEmpty()
             this.hasPassportData() -> "passportdata: hided"
-            this.hasVoice() -> "voice" + this.voice.fileId
-            this.hasVideoNote() -> "videoNote" + this.videoNote.fileId
-            this.hasSuccessfulPayment() -> "successfullPayment:" + this.successfulPayment.telegramPaymentChargeId
+            this.hasVoice() -> "voice: " + this.voice.fileId
+            this.hasVideoNote() -> "videoNote: " + this.videoNote.fileId
+            this.hasSuccessfulPayment() -> "successfullPayment: :" + this.successfulPayment.telegramPaymentChargeId
             else -> ""
         }
     }
