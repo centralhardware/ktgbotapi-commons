@@ -91,5 +91,4 @@ class ClickhouseRuben: BaseClickhouse() {
                 update.type()!!)
         }
     }
-
 }
