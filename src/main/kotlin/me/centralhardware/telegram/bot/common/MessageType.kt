@@ -14,7 +14,6 @@ enum class MessageType {
     VOICE,
     VIDEO_NOTE,
     STICKER,
-
     EDIT_MESSAGE,
     INLINE,
     CHOSEN_INLINE,
