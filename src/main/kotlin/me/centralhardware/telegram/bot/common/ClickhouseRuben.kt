@@ -45,10 +45,10 @@ class ClickhouseRuben: BaseClickhouse() {
     private fun Update.text(): String{
         return when{
             this.hasMessage() -> this.message.text()
-            this.hasEditedMessage() -> "editMessage: ${this.editedMessage.messageId}"
-            this.hasInlineQuery() -> "inline: ${this.inlineQuery.query}"
-            this.hasChosenInlineQuery() -> "chosenInline: ${this.chosenInlineQuery.query}"
-            this.hasCallbackQuery() -> "callback: ${this.callbackQuery.data}"
+            this.hasEditedMessage() -> this.editedMessage.messageId.toString()
+            this.hasInlineQuery() -> this.inlineQuery.query
+            this.hasChosenInlineQuery() -> this.chosenInlineQuery.query
+            this.hasCallbackQuery() -> this.callbackQuery.data
             else -> ""
         }
     }
