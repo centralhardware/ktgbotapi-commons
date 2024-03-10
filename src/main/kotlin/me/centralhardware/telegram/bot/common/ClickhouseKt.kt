@@ -4,7 +4,7 @@ import dev.inmo.tgbotapi.types.chat.CommonUser
 
 class ClickhouseKt: BaseClickhouse() {
 
-    suspend fun log(text: String, isInline: Boolean, user: CommonUser?, botName: String) {
+    suspend fun log(text: String, user: CommonUser?, botName: String, type: MessageType) {
         user?.let {
             insert(
                 it.id.chatId,
@@ -12,10 +12,10 @@ class ClickhouseKt: BaseClickhouse() {
                 it.firstName,
                 it.lastName,
                 it.isPremium,
-                isInline,
                 it.languageCode,
                 text,
-                botName)
+                botName,
+                type)
         }
     }
 

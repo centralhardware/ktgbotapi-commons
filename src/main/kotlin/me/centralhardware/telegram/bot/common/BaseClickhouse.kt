@@ -20,10 +20,10 @@ open class BaseClickhouse {
         firstName: String?,
         lastName: String?,
         isPremium: Boolean,
-        isInline: Boolean,
         languageCode: String?,
         text: String,
-        botName: String
+        botName: String,
+        type: MessageType
     ) {
         sessionOf(dataSource).execute(
             //language=GenericSQL
@@ -37,9 +37,9 @@ open class BaseClickhouse {
                 first_name,
                 last_name,
                 is_premium,
-                is_inline,
                 lang,
-                text
+                text,
+                type
            ) VALUES (
                 now(),
                 :bot_name,
@@ -48,9 +48,9 @@ open class BaseClickhouse {
                 :first_name,
                 :last_name,
                 :is_premium,
-                :is_inline,
                 :lang,
-                :text
+                :text,
+                :type
            ) 
         """, mapOf(
                     "bot_name" to botName,
@@ -59,9 +59,9 @@ open class BaseClickhouse {
                     "first_name" to firstName,
                     "last_name" to lastName,
                     "is_premium" to isPremium,
-                    "is_inline" to isInline,
                     "lang" to languageCode,
-                    "text" to text
+                    "text" to text,
+                    "type" to type.name
                 )
             )
         )

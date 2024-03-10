@@ -8,22 +8,37 @@ class ClickhouseRuben: BaseClickhouse() {
 
     private fun Message.text(): String{
         return when{
-            this.hasText() -> "text: " + this.text
-            this.hasDice() -> "dice: " + this.dice.emoji
-            this.hasPoll() -> "poll: " + this.poll.question
-            this.hasDocument() -> "document: " + this.document.fileId
-            this.hasAudio() -> "audio: " + this.audio.fileId
-            this.hasAnimation() -> "animation: " + this.animation.fileId
-            this.hasContact() -> "contact: ${this.contact.userId} ${this.contact.firstName} ${this.contact.lastName}"
-            this.hasInvoice() -> "invoice: ${this.invoice.title} ${this.invoice.description} ${this.invoice.currency} ${this.invoice.totalAmount}"
-            this.hasLocation() -> "location: ${this.location.latitude} ${this.location.longitude} ${this.location.heading}"
-            this.hasPhoto() -> "photo: " + this.photo.sortedBy { it.fileSize }.map { it.fileId }.first().orEmpty()
-            this.hasPassportData() -> "passportdata: hided"
-            this.hasVoice() -> "voice: " + this.voice.fileId
-            this.hasVideoNote() -> "videoNote: " + this.videoNote.fileId
-            this.hasSuccessfulPayment() -> "successfullPayment: :" + this.successfulPayment.telegramPaymentChargeId
-            this.hasSticker() -> "sticker: ${this.sticker.emoji} ${this.sticker.setName}$"
+            this.hasText() -> this.text
+            this.hasDice() -> this.dice.emoji
+            this.hasPoll() -> this.poll.question
+            this.hasDocument() -> this.document.fileId
+            this.hasAudio() -> this.audio.fileId
+            this.hasAnimation() -> this.animation.fileId
+            this.hasContact() -> "${this.contact.userId} ${this.contact.firstName} ${this.contact.lastName}"
+            this.hasLocation() -> "${this.location.latitude} ${this.location.longitude} ${this.location.heading}"
+            this.hasPhoto() -> this.photo.sortedBy { it.fileSize }.map { it.fileId }.first().orEmpty()
+            this.hasVoice() -> this.voice.fileId
+            this.hasVideoNote() -> this.videoNote.fileId
+            this.hasSticker() -> "${this.sticker.emoji} ${this.sticker.setName}$"
             else -> ""
+        }
+    }
+
+    private fun Message.type(): MessageType?{
+        return when{
+            this.hasText() -> MessageType.TEXT
+            this.hasDice() ->  MessageType.DICE
+            this.hasPoll() ->  MessageType.POLL
+            this.hasDocument() ->  MessageType.DOCUMENT
+            this.hasAudio() ->  MessageType.AUDIO
+            this.hasAnimation() ->  MessageType.ANIMATION
+            this.hasContact() ->  MessageType.CONTACT
+            this.hasLocation() ->  MessageType.LOCATION
+            this.hasPhoto() ->  MessageType.PHOTO
+            this.hasVoice() ->  MessageType.VOICE
+            this.hasVideoNote() ->  MessageType.VIDEO_NOTE
+            this.hasSticker() ->  MessageType.STICKER
+            else -> null
         }
     }
 
@@ -35,6 +50,17 @@ class ClickhouseRuben: BaseClickhouse() {
             this.hasChosenInlineQuery() -> "chosenInline: ${this.chosenInlineQuery.query}"
             this.hasCallbackQuery() -> "callback: ${this.callbackQuery.data}"
             else -> ""
+        }
+    }
+
+    private fun Update.type(): MessageType?{
+        return when{
+            this.hasMessage() -> this.message.type()
+            this.hasEditedMessage() -> MessageType.EDIT_MESSAGE
+            this.hasInlineQuery() -> MessageType.INLINE
+            this.hasChosenInlineQuery() -> MessageType.CHOSEN_INLINE
+            this.hasCallbackQuery() -> MessageType.CALLBACK
+            else -> null
         }
     }
 
@@ -50,6 +76,8 @@ class ClickhouseRuben: BaseClickhouse() {
     }
 
     fun log(update: Update,botName: String){
+        if (update.type() == null) return
+
         update.user()?.let {
             insert(
                 it.id,
@@ -57,10 +85,10 @@ class ClickhouseRuben: BaseClickhouse() {
                 it.firstName,
                 it.lastName,
                 it.isPremium ?: false,
-                update.hasInlineQuery(),
                 it.languageCode,
                 update.text(),
-                botName)
+                botName,
+                update.type()!!)
         }
     }
 
