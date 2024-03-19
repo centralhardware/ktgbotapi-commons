@@ -15,7 +15,7 @@ dependencies {
     implementation("org.telegram:telegrambots:6.9.7.1"){
         isTransitive = true
     }
-    implementation("dev.inmo:tgbotapi:10.1.0") {
+    implementation("dev.inmo:tgbotapi:11.0.0") {
         isTransitive = true
     }
     implementation("com.clickhouse:clickhouse-jdbc:0.6.0")

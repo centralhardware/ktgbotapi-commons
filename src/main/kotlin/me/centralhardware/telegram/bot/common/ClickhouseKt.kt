@@ -7,7 +7,7 @@ class ClickhouseKt: BaseClickhouse() {
     suspend fun log(text: String, user: CommonUser?, botName: String, type: MessageType) {
         user?.let {
             insert(
-                it.id.chatId,
+                it.id.chatId.long,
                 it.username?.full,
                 it.firstName,
                 it.lastName,
