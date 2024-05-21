@@ -1,8 +1,8 @@
 package me.centralhardware.telegram.bot.common
 
-import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.User
+import org.telegram.telegrambots.meta.api.objects.message.Message
 
 class ClickhouseRuben: BaseClickhouse() {
 
