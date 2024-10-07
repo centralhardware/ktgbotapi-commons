@@ -1,7 +1,7 @@
 plugins {
     java
     `maven-publish`
-    kotlin("jvm") version "2.0.0"
+    kotlin("jvm") version "2.0.20"
 }
 
 group = "me.centralhardware"
@@ -12,17 +12,10 @@ repositories {
 }
 
 dependencies {
-    implementation("org.telegram:telegrambots-meta:7.2.1"){
-        isTransitive = true
-    }
-    implementation("dev.inmo:tgbotapi:13.0.0") {
-        isTransitive = true
-    }
-    implementation("com.clickhouse:clickhouse-jdbc:0.6.0-patch3")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
-    implementation("org.lz4:lz4-java:1.8.0")
-    implementation("com.github.seratch:kotliquery:1.9.0")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    implementation("org.apache.commons:commons-lang3:3.17.0")
+
+    implementation("dev.inmo:kslog:1.3.6") { isTransitive = true }
+    implementation("dev.inmo:tgbotapi:18.2.1") { isTransitive = true }
 }
 
 tasks.test {
