@@ -10,6 +10,9 @@ fun KSLog.configure(appName: String) {
     }
     KSLoggerDefaultPlatformLoggerLambda = { level, tag, message, throwable ->
         println(message)
+        if (throwable != null) {
+            println(throwable.stackTraceToString())
+        }
     }
     setDefaultKSLog(
         KSLog(appName, minLoggingLevel = minLogLevel)
