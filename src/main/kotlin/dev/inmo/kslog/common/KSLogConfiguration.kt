@@ -1,7 +1,6 @@
 package dev.inmo.kslog.common
 
 import org.apache.commons.lang3.BooleanUtils
-import org.apache.commons.lang3.StringUtils
 
 fun KSLog.configure(appName: String) {
     val minLogLevel = if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
@@ -9,10 +8,7 @@ fun KSLog.configure(appName: String) {
     } else {
         LogLevel.INFO
     }
-    KSLoggerDefaultPlatformLoggerLambda = fun(_, _, message, throwable){
-        if (StringUtils.isBlank(message.toString()) && throwable == null) {
-            return
-        }
+    KSLoggerDefaultPlatformLoggerLambda = fun(level, tag, message, throwable){
         println(message)
         if (throwable != null) {
             println(throwable.stackTraceToString())
