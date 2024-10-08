@@ -30,8 +30,13 @@ class HealthCheckKtorPipelineStepsHolder: KtorPipelineStepsHolder {
     val health: MutableStateFlow<Boolean> = MutableStateFlow(false);
 
     override suspend fun <T : Any> onRequestException(request: Request<T>, t: Throwable): T? {
-        health.value = t is HttpRequestTimeoutException &&
-                t.message!!.startsWith("Request timeout has expired [url=https://api.telegram.org/bot")
+        if (t is HttpRequestTimeoutException &&
+            t.message!!.startsWith("Request timeout has expired [url=https://api.telegram.org/bot")
+        ) {
+            health.value = true
+        } else {
+            health.value = false
+        }
 
         return super.onRequestException(request, t)
     }
@@ -41,7 +46,9 @@ class HealthCheckKtorPipelineStepsHolder: KtorPipelineStepsHolder {
         request: Request<T>,
         callsFactories: List<KtorCallFactory>
     ): T {
-        health.value = request is GetUpdates && result.isSuccess
+        if (request is GetUpdates && result.isSuccess) {
+            health.value = true
+        }
         return super.onRequestReturnResult(result, request, callsFactories)
     }
 
