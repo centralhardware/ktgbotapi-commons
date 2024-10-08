@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class HealthCheckKtorPipelineStepsHolder: KtorPipelineStepsHolder {
 
     init {
-        embeddedServer(Netty, port = 80) {
+        embeddedServer(Netty, port = 81) {
             routing {
                 get("/health") {
                     if (health.value) {
