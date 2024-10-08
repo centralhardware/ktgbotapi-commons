@@ -2,10 +2,30 @@ package dev.inmo.tgbotapi.bot.ktor
 
 import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
-import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.*
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class HealthCheckKtorPipelineStepsHolder: KtorPipelineStepsHolder {
+
+    init {
+        embeddedServer(Netty, port = 80) {
+            routing {
+                get("/health") {
+                    if (health.value) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest)
+                    }
+                }
+            }
+        }.start(wait = false)
+    }
 
     val health: MutableStateFlow<Boolean> = MutableStateFlow(false);
 
