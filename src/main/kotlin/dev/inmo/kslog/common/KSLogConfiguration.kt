@@ -23,7 +23,7 @@ fun KSLog.configure(appName: String) {
     }
     KSLoggerDefaultPlatformLoggerLambda = fun(level, tag, message, throwable){
         if (throwable is CancellationException) return
-        println("${getCallerMethodName()} ${getDateTime()} $message")
+        println("${getDateTime()} ${getCallerMethodName()} $message")
         if (throwable != null) {
             println(throwable.stackTraceToString())
         }
