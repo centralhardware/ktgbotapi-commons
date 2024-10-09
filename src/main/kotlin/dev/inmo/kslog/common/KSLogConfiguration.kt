@@ -6,7 +6,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 fun getCallerMethodName(): String {
-    val stacktrace = Thread.currentThread().stackTrace;
+    val stacktrace = Thread.currentThread().stackTrace
+        .filterNot { it.className.startsWith("dev.inmo.kslog.common") };
     val e = stacktrace[2];
     return e.toString();
 }
