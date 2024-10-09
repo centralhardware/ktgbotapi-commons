@@ -12,7 +12,7 @@ fun getCallerMethodName(): String {
     return e.toString();
 }
 
-val formatter = DateTimeFormatter.ofPattern("dd.MM HH:mm:ss:MI")
+val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
 fun KSLog.configure(appName: String) {
