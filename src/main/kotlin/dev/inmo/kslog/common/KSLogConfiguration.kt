@@ -2,6 +2,17 @@ package dev.inmo.kslog.common
 
 import kotlinx.coroutines.CancellationException
 import org.apache.commons.lang3.BooleanUtils
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+fun getCallerMethodName(): String {
+    val stacktrace = Thread.currentThread().stackTrace;
+    val e = stacktrace[2];
+    return e.toString();
+}
+
+val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss") // Формат даты и времени
+fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
 fun KSLog.configure(appName: String) {
     val minLogLevel = if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
@@ -11,7 +22,7 @@ fun KSLog.configure(appName: String) {
     }
     KSLoggerDefaultPlatformLoggerLambda = fun(level, tag, message, throwable){
         if (throwable is CancellationException) return
-        println(message)
+        println("${getCallerMethodName()} ${getDateTime()} $message")
         if (throwable != null) {
             println(throwable.stackTraceToString())
         }
