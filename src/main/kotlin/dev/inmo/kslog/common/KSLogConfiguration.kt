@@ -5,13 +5,6 @@ import org.apache.commons.lang3.BooleanUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-fun getCallerMethodName(): String {
-    val stacktrace = Thread.currentThread().stackTrace
-        .filterNot { it.className.startsWith("dev.inmo.kslog.common") };
-    val e = stacktrace[2];
-    return e.toString();
-}
-
 val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
@@ -21,9 +14,9 @@ fun KSLog.configure(appName: String) {
     } else {
         LogLevel.INFO
     }
-    KSLoggerDefaultPlatformLoggerLambda = fun(level, tag, message, throwable){
+    KSLoggerDefaultPlatformLoggerLambda = fun(_, _, message, throwable){
         if (throwable is CancellationException) return
-        println("${getDateTime()} ${getCallerMethodName()} $message")
+        println("${getDateTime()} $message")
         if (throwable != null) {
             println(throwable.stackTraceToString())
         }
