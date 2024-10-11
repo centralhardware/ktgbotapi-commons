@@ -13,7 +13,7 @@ import io.ktor.server.routing.routing
 class HealthCheck(bot: TelegramBot) {
 
     companion object {
-        val bots: MutableSet<TelegramBot> = mutableSetOf()
+        private val bots: MutableSet<TelegramBot> = mutableSetOf()
 
         fun addBot(bot: TelegramBot) {
             bots.add(bot)
@@ -26,7 +26,7 @@ class HealthCheck(bot: TelegramBot) {
                         try {
                             bots.forEach {  it.getMe()  }
                             call.respond(HttpStatusCode.OK)
-                        } catch (e: Throwable) {
+                        } catch (_: Throwable) {
                             call.respond(HttpStatusCode.BadRequest)
                         }
                     }
