@@ -14,6 +14,7 @@ fun KSLog.configure(appName: String) {
         LogLevel.INFO
     }
     KSLoggerDefaultPlatformLoggerLambda = fun(_, _, message, throwable){
+        if (throwable != null && throwable::class.simpleName == "JobCancellationException") return
         println("${getDateTime()} $message")
         if (throwable != null) {
             println(throwable.stackTraceToString())
