@@ -1,6 +1,5 @@
 package dev.inmo.kslog.common
 
-import kotlinx.coroutines.CancellationException
 import org.apache.commons.lang3.BooleanUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -15,7 +14,6 @@ fun KSLog.configure(appName: String) {
         LogLevel.INFO
     }
     KSLoggerDefaultPlatformLoggerLambda = fun(_, _, message, throwable){
-        if (throwable is CancellationException) return
         println("${getDateTime()} $message")
         if (throwable != null) {
             println(throwable.stackTraceToString())
