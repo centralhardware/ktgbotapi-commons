@@ -27,7 +27,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         sessionOf(dataSource).execute(
             queryOf(
                 """
-                              INSERT INTO bot_log
+                              INSERT INTO bot_log.bot_log
                               ( date_time,
                                 appName,
                                 type,
