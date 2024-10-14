@@ -55,13 +55,18 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         request: Request<T>,
         callsFactories: List<KtorCallFactory>
     ): T {
-        if (result.isSuccess && request is GetUpdates) {
-            (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
-        } else if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
+        if (result.isSuccess && validrequest(request)) {
+            when (val response = result.getOrThrow()) {
+                is ArrayList<*> -> (response as ArrayList<Any>).forEach { save(it, true) }
+                else -> save(response, true)
+            }
+        } else if (result.isSuccess && request !is GetUpdates && validrequest(request)) {
             save(request, false)
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
     }
+
+    fun <T: Any> validrequest(request: Request<T>): Boolean = request !is DeleteWebhook && request !is GetMe
 
 }
