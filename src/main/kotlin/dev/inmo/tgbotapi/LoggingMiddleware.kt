@@ -54,8 +54,8 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         callsFactories: List<KtorCallFactory>
     ): T {
         if (result.isSuccess && request is GetUpdates) {
-            (result as ArrayList<Any>).forEach { save(it, true)}
-        } else if (result.isSuccess && request !is GetUpdates) {
+            (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
+        } else if (result.isSuccess && request !is GetUpdates && result.getOrNull() !is Boolean) {
             save(request, false)
         }
 
