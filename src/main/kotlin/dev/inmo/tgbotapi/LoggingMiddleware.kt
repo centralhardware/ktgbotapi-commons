@@ -57,7 +57,8 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     ): T {
         if (result.isSuccess && request is GetUpdates) {
             (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
-        } else if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
+        }
+        if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
             save(request, false)
         }
 
