@@ -39,7 +39,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                                 :appName,
                                 :type,
                                 :data,
-                                :className,)
+                                :className)
             """,
                 mapOf(
                     "date_time" to LocalDateTime.now(),
