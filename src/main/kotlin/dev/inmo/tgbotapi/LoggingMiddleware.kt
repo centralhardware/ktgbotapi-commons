@@ -6,6 +6,7 @@ import dev.inmo.tgbotapi.bot.ktor.KtorCallFactory
 import dev.inmo.tgbotapi.bot.ktor.KtorPipelineStepsHolder
 import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
+import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
 import kotliquery.queryOf
 import kotliquery.sessionOf
@@ -23,7 +24,6 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     }
 
     fun save(data: Any, income: Boolean) {
-        println(data)
         sessionOf(dataSource).execute(
             queryOf(
                 """
@@ -57,7 +57,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     ): T {
         if (result.isSuccess && request is GetUpdates) {
             (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
-        } else if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook) {
+        } else if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
             save(request, false)
         }
 
