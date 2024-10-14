@@ -6,6 +6,7 @@ import dev.inmo.tgbotapi.bot.ktor.KtorCallFactory
 import dev.inmo.tgbotapi.bot.ktor.KtorPipelineStepsHolder
 import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
+import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import java.sql.SQLException
@@ -55,7 +56,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     ): T {
         if (result.isSuccess && request is GetUpdates) {
             (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
-        } else if (result.isSuccess && request !is GetUpdates && result.getOrNull() !is Boolean) {
+        } else if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook) {
             save(request, false)
         }
 
