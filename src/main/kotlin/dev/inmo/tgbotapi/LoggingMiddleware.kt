@@ -10,6 +10,7 @@ import kotliquery.queryOf
 import kotliquery.sessionOf
 import java.sql.SQLException
 import java.time.LocalDateTime
+import java.util.ArrayList
 import javax.sql.DataSource
 
 class LoggingMiddleware: KtorPipelineStepsHolder {
@@ -53,8 +54,8 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         callsFactories: List<KtorCallFactory>
     ): T {
         if (result.isSuccess && request is GetUpdates) {
-            save(result, true)
-        } else if (result.isSuccess && request !is GetUpdates && request !is Boolean) {
+            (result as ArrayList<Any>).forEach { save(it, true)}
+        } else if (result.isSuccess && request !is GetUpdates) {
             save(request, false)
         }
 
