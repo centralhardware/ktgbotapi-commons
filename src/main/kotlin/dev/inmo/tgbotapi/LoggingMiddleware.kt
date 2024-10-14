@@ -26,16 +26,19 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                 """
                               INSERT INTO bot_log
                               ( date_time,
+                                appName,
                                 type,
                                 data
                               )
                               VALUES (
                                 :date_time,
+                                :appName,
                                 :type,
                                 :data)
             """,
                 mapOf(
                     "date_time" to LocalDateTime.now(),
+                    "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
                     "data" to gson.toJson(data)
                 )
