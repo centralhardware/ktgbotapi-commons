@@ -55,7 +55,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         request: Request<T>,
         callsFactories: List<KtorCallFactory>
     ): T {
-        if (result.isSuccess && validrequest(request)) {
+        if (result.isSuccess && validrequest(request) && result.getOrThrow() !is Boolean) {
             when (val response = result.getOrThrow()) {
                 is ArrayList<*> -> (response as ArrayList<Any>).forEach { save(it, true) }
                 else -> save(response, true)
