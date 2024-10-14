@@ -16,7 +16,7 @@ val loggingMiddleware = LoggingMiddleware()
 suspend fun longPolling(block: BehaviourContextReceiver<Unit>): Pair<TelegramBot, Job>  {
     KSLog.configure()
     val res = telegramBotWithBehaviourAndLongPolling(
-        AppConfig.appName(),
+        AppConfig.botToken(),
         CoroutineScope(Dispatchers.IO),
         defaultExceptionsHandler = KSLogExceptionsHandler,
         autoSkipTimeoutExceptions = true,
