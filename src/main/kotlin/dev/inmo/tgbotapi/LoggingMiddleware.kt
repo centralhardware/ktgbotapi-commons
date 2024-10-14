@@ -60,9 +60,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                 is ArrayList<*> -> (response as ArrayList<Any>).forEach { save(it, true) }
                 else -> save(response, true)
             }
-        }
-
-        if (result.isSuccess && request !is GetUpdates && validrequest(request)) {
+        } else if (result.isSuccess && request !is GetUpdates && validrequest(request)) {
             save(request, false)
         }
 
