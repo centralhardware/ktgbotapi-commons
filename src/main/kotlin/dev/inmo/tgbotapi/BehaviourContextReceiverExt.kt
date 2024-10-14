@@ -12,12 +12,14 @@ import kotlinx.coroutines.Job
 val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
 val botToken = System.getenv("BOT_TOKEN")
 
+val loggingMiddleware = LoggingMiddleware()
 suspend fun longPolling(block: BehaviourContextReceiver<Unit>): Pair<TelegramBot, Job>  {
     val res = telegramBotWithBehaviourAndLongPolling(
         botToken,
         CoroutineScope(Dispatchers.IO),
         defaultExceptionsHandler = KSLogExceptionsHandler,
         autoSkipTimeoutExceptions = true,
+        builder = { pipelineStepsHolder = loggingMiddleware },
         block = block)
     HealthCheck.addBot(res.first)
     return res
