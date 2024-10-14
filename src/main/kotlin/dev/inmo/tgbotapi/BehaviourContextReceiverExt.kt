@@ -1,6 +1,7 @@
 package dev.inmo.tgbotapi
 
 import dev.inmo.kslog.common.KSLog
+import dev.inmo.kslog.common.configure
 import dev.inmo.kslog.common.warning
 import dev.inmo.tgbotapi.bot.TelegramBot
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContextReceiver
@@ -13,6 +14,7 @@ val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
 
 val loggingMiddleware = LoggingMiddleware()
 suspend fun longPolling(block: BehaviourContextReceiver<Unit>): Pair<TelegramBot, Job>  {
+    KSLog.configure()
     val res = telegramBotWithBehaviourAndLongPolling(
         AppConfig.appName(),
         CoroutineScope(Dispatchers.IO),
