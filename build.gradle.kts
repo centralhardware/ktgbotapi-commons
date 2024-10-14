@@ -14,6 +14,8 @@ repositories {
 val ktorVersion = "2.3.12";
 
 dependencies {
+    implementation("com.google.code.gson:gson:2.8.9")
+
     implementation("org.apache.commons:commons-lang3:3.17.0")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
