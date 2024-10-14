@@ -23,6 +23,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     }
 
     fun save(data: Any, income: Boolean) {
+        println(data)
         sessionOf(dataSource).execute(
             queryOf(
                 """
