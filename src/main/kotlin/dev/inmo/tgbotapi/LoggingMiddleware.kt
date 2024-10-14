@@ -31,19 +31,22 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                               ( date_time,
                                 appName,
                                 type,
-                                data
+                                data,
+                                className
                               )
                               VALUES (
                                 :date_time,
                                 :appName,
                                 :type,
-                                :data)
+                                :data,
+                                :className,)
             """,
                 mapOf(
                     "date_time" to LocalDateTime.now(),
                     "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
-                    "data" to gson.toJson(data)
+                    "data" to gson.toJson(data),
+                    "className" to data::class.simpleName
                 )
             )
         )
