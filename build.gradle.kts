@@ -23,6 +23,11 @@ dependencies {
 
     implementation("dev.inmo:kslog:1.3.6") { isTransitive = true }
     implementation("dev.inmo:tgbotapi:18.2.1") { isTransitive = true }
+
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
+    implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
+    implementation("org.lz4:lz4-java:1.8.0")
+    implementation("com.github.seratch:kotliquery:1.9.0")
 }
 
 tasks.test {
