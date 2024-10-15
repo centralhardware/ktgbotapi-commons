@@ -8,12 +8,15 @@ import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
 import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
+import dev.inmo.tgbotapi.utils.toJsonWithoutNulls
+import kotlinx.serialization.SerializationStrategy
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import java.sql.SQLException
 import java.time.LocalDateTime
 import java.util.ArrayList
 import javax.sql.DataSource
+import kotlin.reflect.full.declaredMemberProperties
 
 class LoggingMiddleware: KtorPipelineStepsHolder {
 
@@ -23,7 +26,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         throw RuntimeException(e)
     }
 
-    fun save(data: Any, income: Boolean) {
+    fun save(data: String, income: Boolean) {
         sessionOf(dataSource).execute(
             queryOf(
                 """
@@ -52,6 +55,14 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         )
     }
 
+    override suspend fun <T : Any> onAfterCallFactoryMakeCall(
+        result: T?,
+        request: Request<T>,
+        potentialFactory: KtorCallFactory
+    ): T? {
+        return super.onAfterCallFactoryMakeCall(result, request, potentialFactory)
+    }
+
     val gson = Gson()
     override suspend fun <T : Any> onRequestReturnResult(
         result: Result<T>,
@@ -59,13 +70,20 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         callsFactories: List<KtorCallFactory>
     ): T {
         if (result.isSuccess && request is GetUpdates) {
-            (result.getOrNull() as ArrayList<Any>).forEach { save(it, true)}
+            (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), true)}
         }
         if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            save(request, false)
+            save(toJsonWithoutNulls(getSerializer(request)).toString(), false)
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
+    }
+
+    fun<T: Any> getSerializer(data: T): SerializationStrategy<T> {
+        val property = data::class.declaredMemberProperties
+            .find { it.name == "requestSerializer" }
+
+        return (property!!.call(data)) as SerializationStrategy<T>
     }
 
 }
