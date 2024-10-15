@@ -63,6 +63,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         return super.onAfterCallFactoryMakeCall(result, request, potentialFactory)
     }
 
+
     val gson = Gson()
     internal val nonstrictJsonFormat = Json {
         isLenient = true
