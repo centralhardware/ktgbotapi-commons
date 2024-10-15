@@ -81,7 +81,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
             (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), true)}
         }
         if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            save(nonstrictJsonFormat.toJsonWithoutNulls(getSerializer(request)).toString(), false)
+            save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), false)
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
