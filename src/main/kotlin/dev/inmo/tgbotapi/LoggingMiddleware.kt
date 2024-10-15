@@ -49,7 +49,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                     "date_time" to LocalDateTime.now(),
                     "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
-                    "data" to gson.toJson(data),
+                    "data" to data,
                     "className" to data::class.simpleName
                 )
             )
