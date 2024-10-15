@@ -2,6 +2,8 @@ package dev.inmo.tgbotapi
 
 import com.clickhouse.jdbc.ClickHouseDataSource
 import com.google.gson.Gson
+import dev.inmo.kslog.common.KSLog
+import dev.inmo.kslog.common.info
 import dev.inmo.tgbotapi.bot.ktor.KtorCallFactory
 import dev.inmo.tgbotapi.bot.ktor.KtorPipelineStepsHolder
 import dev.inmo.tgbotapi.requests.GetUpdates
@@ -81,7 +83,9 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
             (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class.simpleName!!, true)}
         }
         if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class.simpleName!!, false)
+            runCatching {
+                save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class.simpleName!!, false)
+            }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
