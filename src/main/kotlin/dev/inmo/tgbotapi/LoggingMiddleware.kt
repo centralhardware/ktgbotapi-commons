@@ -10,6 +10,7 @@ import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
 import dev.inmo.tgbotapi.utils.toJsonWithoutNulls
 import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.json.Json
 import kotliquery.queryOf
 import kotliquery.sessionOf
 import java.sql.SQLException
@@ -64,6 +65,13 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
     }
 
     val gson = Gson()
+    internal val nonstrictJsonFormat = Json {
+        isLenient = true
+        ignoreUnknownKeys = true
+        allowSpecialFloatingPointValues = true
+        useArrayPolymorphism = true
+        encodeDefaults = true
+    }
     override suspend fun <T : Any> onRequestReturnResult(
         result: Result<T>,
         request: Request<T>,
@@ -73,7 +81,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
             (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), true)}
         }
         if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            save(toJsonWithoutNulls(getSerializer(request)).toString(), false)
+            save(nonstrictJsonFormat.toJsonWithoutNulls(getSerializer(request)).toString(), false)
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
