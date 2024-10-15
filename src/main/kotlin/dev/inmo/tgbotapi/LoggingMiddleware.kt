@@ -8,7 +8,6 @@ import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
 import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
-import dev.inmo.tgbotapi.utils.toJsonWithoutNulls
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import kotliquery.queryOf
@@ -27,7 +26,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         throw RuntimeException(e)
     }
 
-    fun save(data: String, income: Boolean) {
+    fun save(data: String, clazz: String, income: Boolean) {
         sessionOf(dataSource).execute(
             queryOf(
                 """
@@ -50,7 +49,7 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
                     "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
                     "data" to data,
-                    "className" to data::class.simpleName
+                    "className" to clazz
                 )
             )
         )
@@ -78,10 +77,10 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         callsFactories: List<KtorCallFactory>
     ): T {
         if (result.isSuccess && request is GetUpdates) {
-            (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), true)}
+            (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class.simpleName!!, true)}
         }
         if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), false)
+            save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class.simpleName!!, false)
         }
 
         return super.onRequestReturnResult(result, request, callsFactories)
