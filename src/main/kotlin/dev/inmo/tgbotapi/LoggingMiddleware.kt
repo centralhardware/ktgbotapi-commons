@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import dev.inmo.kslog.common.KSLog
 import dev.inmo.kslog.common.info
 import dev.inmo.tgbotapi.bot.ktor.KtorCallFactory
-import dev.inmo.tgbotapi.bot.ktor.KtorPipelineStepsHolder
+import dev.inmo.tgbotapi.bot.ktor.TelegramBotPipelinesHandler
 import dev.inmo.tgbotapi.requests.GetUpdates
 import dev.inmo.tgbotapi.requests.abstracts.Request
 import dev.inmo.tgbotapi.requests.bot.GetMe
@@ -20,7 +20,7 @@ import java.util.ArrayList
 import javax.sql.DataSource
 import kotlin.reflect.full.declaredMemberProperties
 
-class LoggingMiddleware: KtorPipelineStepsHolder {
+class LoggingMiddleware: TelegramBotPipelinesHandler {
 
     val dataSource: DataSource = try {
         ClickHouseDataSource(System.getenv("CLICKHOUSE_URL"))
@@ -74,21 +74,22 @@ class LoggingMiddleware: KtorPipelineStepsHolder {
         useArrayPolymorphism = true
         encodeDefaults = true
     }
-    override suspend fun <T : Any> onRequestReturnResult(
-        result: Result<T>,
+    override suspend fun <T : Any> onRequestResultPresented(
+        result: T,
         request: Request<T>,
+        resultCallFactory: KtorCallFactory,
         callsFactories: List<KtorCallFactory>
-    ): T {
-        if (result.isSuccess && request is GetUpdates) {
-            (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class.simpleName!!, true)}
+    ): T? {
+        if (request is GetUpdates) {
+            (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class.simpleName!!, true)}
         }
-        if (result.isSuccess && request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
+        if (request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
             runCatching {
                 save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class.simpleName!!, false)
             }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
         }
 
-        return super.onRequestReturnResult(result, request, callsFactories)
+        return super.onRequestResultPresented(result, request, resultCallFactory, callsFactories)
     }
 
     fun<T: Any> getSerializer(data: T): SerializationStrategy<T> {
