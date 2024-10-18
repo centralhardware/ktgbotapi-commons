@@ -55,7 +55,7 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
                     "type" to if (income) "IN" else "OUT",
                     "data" to data,
                     "className" to clazz,
-                    "host" to InetAddress.getLocalHost().hostName
+                    "host" to (System.getenv("HOST")?: InetAddress.getLocalHost().hostName)
                 )
             )
         )
