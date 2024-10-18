@@ -14,6 +14,7 @@ import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.Json
 import kotliquery.queryOf
 import kotliquery.sessionOf
+import java.net.InetAddress
 import java.sql.SQLException
 import java.time.LocalDateTime
 import java.util.ArrayList
@@ -37,21 +38,24 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
                                 appName,
                                 type,
                                 data,
-                                className
+                                className,
+                                host
                               )
                               VALUES (
                                 :date_time,
                                 :appName,
                                 :type,
                                 :data,
-                                :className)
+                                :className,
+                                :host)
             """,
                 mapOf(
                     "date_time" to LocalDateTime.now(),
                     "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
                     "data" to data,
-                    "className" to clazz
+                    "className" to clazz,
+                    "host" to InetAddress.getLocalHost().hostName
                 )
             )
         )
