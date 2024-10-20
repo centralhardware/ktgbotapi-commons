@@ -1,7 +1,6 @@
 package dev.inmo.kslog.common
 
 import dev.inmo.tgbotapi.AppConfig
-import io.sentry.Sentry
 import org.apache.commons.lang3.BooleanUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
