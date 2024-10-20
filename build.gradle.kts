@@ -24,8 +24,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
     implementation("dev.inmo:kslog:1.3.6") { isTransitive = true }
-    implementation("dev.inmo:tgbotapi:18.2.1") { isTransitive = true }
-    implementation("dev.inmo:tgbotapi:18.2.2-branch_18.2.2-build2460")
+    implementation("dev.inmo:tgbotapi:18.2.2-branch_18.2.2-build2465") { isTransitive = true }
+    implementation("dev.inmo:tgbotapi:18.2.2-branch_18.2.2-build2465")
 
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
     implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
