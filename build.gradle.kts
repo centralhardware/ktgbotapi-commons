@@ -15,7 +15,7 @@ repositories {
 val ktorVersion = "2.3.12";
 
 dependencies {
-    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
     implementation("org.apache.commons:commons-lang3:3.17.0")
