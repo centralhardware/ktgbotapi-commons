@@ -30,8 +30,6 @@ dependencies {
     implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
     implementation("org.lz4:lz4-java:1.8.0")
     implementation("com.github.seratch:kotliquery:1.9.0")
-
-    implementation("io.sentry:sentry:7.15.0")
 }
 
 tasks.test {

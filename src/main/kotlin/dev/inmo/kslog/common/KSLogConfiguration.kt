@@ -10,7 +10,6 @@ val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
 fun KSLog.configure() {
-    Sentry.init()
     val minLogLevel = if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
         LogLevel.DEBUG
     } else {
@@ -20,7 +19,6 @@ fun KSLog.configure() {
         if (throwable != null && throwable::class.simpleName == "JobCancellationException") return
         println("${getDateTime()} $message")
         if (throwable != null) {
-            Sentry.captureException(throwable)
             println(throwable.stackTraceToString())
         }
     }
