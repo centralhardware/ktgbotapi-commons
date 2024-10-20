@@ -8,8 +8,8 @@ group = "me.centralhardware"
 version = "1.0-SNAPSHOT"
 
 repositories {
-    maven("https://nexus.inmo.dev/repository/maven-releases/")
     mavenCentral()
+    maven("https://nexus.inmo.dev/repository/maven-releases/")
 }
 
 val ktorVersion = "2.3.12";
