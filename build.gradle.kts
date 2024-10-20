@@ -12,7 +12,7 @@ repositories {
     mavenCentral()
 }
 
-val ktorVersion = "2.3.12";
+val ktorVersion = "3.0.0";
 
 dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
