@@ -27,7 +27,7 @@ dependencies {
     implementation("dev.inmo:tgbotapi:18.2.2-branch_18.2.2-build2465") { isTransitive = true }
 
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
-    implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
+    implementation("com.clickhouse:clickhouse-jdbc:0.7.0")
     implementation("org.lz4:lz4-java:1.8.0")
     implementation("com.github.seratch:kotliquery:1.9.0")
 }
