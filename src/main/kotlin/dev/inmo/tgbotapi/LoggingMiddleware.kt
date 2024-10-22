@@ -94,7 +94,7 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
         if (request is GetUpdates) {
             (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
         } else if (request !is DeleteWebhook && request !is GetMe) {
-            save(gson.toJson(result), request::class, true)
+            save(gson.toJson(result), result::class, true)
         }
 
         return super.onRequestResultPresented(result, request, resultCallFactory, callsFactories)
