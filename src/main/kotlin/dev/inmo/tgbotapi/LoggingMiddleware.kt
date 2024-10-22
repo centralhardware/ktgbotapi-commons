@@ -19,6 +19,7 @@ import java.sql.SQLException
 import java.time.LocalDateTime
 import java.util.ArrayList
 import javax.sql.DataSource
+import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberProperties
 
 class LoggingMiddleware: TelegramBotPipelinesHandler {
@@ -29,7 +30,7 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
         throw RuntimeException(e)
     }
 
-    fun save(data: String, clazz: String, income: Boolean) {
+    fun save(data: String, clazz: KClass<*>, income: Boolean) {
         sessionOf(dataSource).execute(
             queryOf(
                 """
@@ -54,7 +55,7 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
                     "appName" to AppConfig.appName(),
                     "type" to if (income) "IN" else "OUT",
                     "data" to data,
-                    "className" to clazz,
+                    "className" to clazz.simpleName,
                     "host" to (System.getenv("HOST")?: InetAddress.getLocalHost().hostName)
                 )
             )
@@ -85,11 +86,14 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
         callsFactories: List<KtorCallFactory>
     ): T? {
         if (request is GetUpdates) {
-            (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class.simpleName!!, true)}
+            (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
+        } else if (request !is DeleteWebhook && request !is GetMe) {
+            save(gson.toJson(result), request::class, true)
         }
+
         if (request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
             runCatching {
-                save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class.simpleName!!, false)
+                save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class, false)
             }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
         }
 
