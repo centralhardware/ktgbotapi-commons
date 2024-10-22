@@ -9,7 +9,6 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven("https://nexus.inmo.dev/repository/maven-releases/")
 }
 
 val ktorVersion = "2.3.12";
@@ -24,7 +23,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
     implementation("dev.inmo:kslog:1.3.6") { isTransitive = true }
-    implementation("dev.inmo:tgbotapi:18.2.2-branch_18.2.2-build2465") { isTransitive = true }
+    implementation("dev.inmo:tgbotapi:18.2.2") { isTransitive = true }
 
     implementation("org.apache.httpcomponents.client5:httpclient5:5.4")
     implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
