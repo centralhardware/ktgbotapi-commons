@@ -85,16 +85,16 @@ class LoggingMiddleware: TelegramBotPipelinesHandler {
         resultCallFactory: KtorCallFactory,
         callsFactories: List<KtorCallFactory>
     ): T? {
-        if (request is GetUpdates) {
-            (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
-        } else if (request !is DeleteWebhook && request !is GetMe) {
-            save(gson.toJson(result), request::class, true)
-        }
-
         if (request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
             runCatching {
                 save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class, false)
             }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
+        }
+
+        if (request is GetUpdates) {
+            (result as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
+        } else if (request !is DeleteWebhook && request !is GetMe) {
+            save(gson.toJson(result), request::class, true)
         }
 
         return super.onRequestResultPresented(result, request, resultCallFactory, callsFactories)
