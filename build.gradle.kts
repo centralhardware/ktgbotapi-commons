@@ -22,7 +22,7 @@ dependencies {
 
     implementation("dev.inmo:kslog:1.3.6")
     implementation("dev.inmo:tgbotapi:18.2.2")
-    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:ed3612070e")
+    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:17c3019f89")
 }
 
 tasks.test {
