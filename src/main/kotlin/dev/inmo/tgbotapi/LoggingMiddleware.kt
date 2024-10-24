@@ -83,7 +83,7 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.loggingMiddleware() {
                 }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
             }
 
-            if (request is GetUpdates) {
+            if (request is GetUpdates && result.getOrNull() != null) {
                 (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
             } else if (request !is DeleteWebhook && request !is GetMe) {
                 save(gson.toJson(result), result.getOrNull()!!::class, true)
