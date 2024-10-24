@@ -23,7 +23,7 @@ suspend fun longPolling(block: BehaviourContextReceiver<Unit>): Pair<TelegramBot
         autoSkipTimeoutExceptions = true,
         builder = {
             includeMiddlewares {
-                addMiddleware{ addLogging() }
+                loggingMiddleware()
             }
         },
         block = block)

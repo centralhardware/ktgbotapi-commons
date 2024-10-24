@@ -5,11 +5,8 @@ import com.google.gson.Gson
 import dev.inmo.kslog.common.KSLog
 import dev.inmo.kslog.common.info
 import dev.inmo.micro_utils.common.Warning
-import dev.inmo.tgbotapi.bot.ktor.KtorCallFactory
-import dev.inmo.tgbotapi.bot.ktor.TelegramBotPipelinesHandler
-import dev.inmo.tgbotapi.bot.ktor.middlewares.TelegramBotMiddlewareBuilder
+import dev.inmo.tgbotapi.bot.ktor.middlewares.TelegramBotMiddlewaresPipelinesHandler
 import dev.inmo.tgbotapi.requests.GetUpdates
-import dev.inmo.tgbotapi.requests.abstracts.Request
 import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.webhook.DeleteWebhook
 import kotlinx.serialization.SerializationStrategy
@@ -69,27 +66,29 @@ private val dataSource: DataSource = try {
     throw RuntimeException(e)
 }
 @OptIn(Warning::class)
-fun TelegramBotMiddlewareBuilder.addLogging() {
-    val gson = Gson()
-    val nonstrictJsonFormat = Json {
-        isLenient = true
-        ignoreUnknownKeys = true
-        allowSpecialFloatingPointValues = true
-        useArrayPolymorphism = true
-        encodeDefaults = true
-    }
-    doOnRequestReturnResult { result, request, _ ->
-        if (request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
-            runCatching {
-                save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class, false)
-            }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
+fun TelegramBotMiddlewaresPipelinesHandler.Builder.loggingMiddleware() {
+    addMiddleware {
+        val gson = Gson()
+        val nonstrictJsonFormat = Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+            allowSpecialFloatingPointValues = true
+            useArrayPolymorphism = true
+            encodeDefaults = true
         }
+        doOnRequestReturnResult { result, request, _ ->
+            if (request !is GetUpdates && request !is DeleteWebhook && request !is GetMe) {
+                runCatching {
+                    save(nonstrictJsonFormat.encodeToJsonElement(getSerializer(request), request).toString(), request::class, false)
+                }.onFailure { KSLog.info("Failed to save request ${request::class.simpleName}") }
+            }
 
-        if (request is GetUpdates) {
-            (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
-        } else if (request !is DeleteWebhook && request !is GetMe) {
-            save(gson.toJson(result), result::class, true)
+            if (request is GetUpdates) {
+                (result.getOrNull() as ArrayList<Any>).forEach { save(gson.toJson(it), it::class, true)}
+            } else if (request !is DeleteWebhook && request !is GetMe) {
+                save(gson.toJson(result), result::class, true)
+            }
+            null
         }
-        null
     }
 }
