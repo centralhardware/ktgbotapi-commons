@@ -9,26 +9,20 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 val ktorVersion = "2.3.12";
 
 dependencies {
-    implementation("com.google.code.gson:gson:2.11.0")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-
     implementation("org.apache.commons:commons-lang3:3.17.0")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
-    implementation("dev.inmo:kslog:1.3.6") { isTransitive = true }
-    implementation("dev.inmo:tgbotapi:18.2.2") { isTransitive = true }
-
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4")
-    implementation("com.clickhouse:clickhouse-jdbc:0.6.5")
-    implementation("org.lz4:lz4-java:1.8.0")
-    implementation("com.github.seratch:kotliquery:1.9.0")
+    implementation("dev.inmo:kslog:1.3.6")
+    implementation("dev.inmo:tgbotapi:18.2.2")
+    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:ed3612070e")
 }
 
 tasks.test {

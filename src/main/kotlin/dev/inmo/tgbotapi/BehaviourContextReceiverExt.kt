@@ -10,6 +10,7 @@ import dev.inmo.tgbotapi.extensions.behaviour_builder.telegramBotWithBehaviourAn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import me.centralhardware.telegram.loggingMiddleware
 
 val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
 
@@ -23,7 +24,7 @@ suspend fun longPolling(block: BehaviourContextReceiver<Unit>): Pair<TelegramBot
         autoSkipTimeoutExceptions = true,
         builder = {
             includeMiddlewares {
-                loggingMiddleware()
+                loggingMiddleware(AppConfig.appName())
             }
         },
         block = block)
