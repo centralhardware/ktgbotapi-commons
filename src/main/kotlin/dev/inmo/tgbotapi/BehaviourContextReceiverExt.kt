@@ -16,21 +16,25 @@ import me.centralhardware.telegram.loggingMiddleware
 val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
 
 @OptIn(Warning::class)
-suspend fun longPolling(middlewares: TelegramBotMiddlewaresPipelinesHandler.Builder.() -> Unit = {},
-                        block: BehaviourContextReceiver<Unit>): Pair<TelegramBot, Job>  {
+suspend fun longPolling(
+    middlewares: TelegramBotMiddlewaresPipelinesHandler.Builder.() -> Unit = {},
+    block: BehaviourContextReceiver<Unit>
+): Pair<TelegramBot, Job> {
     KSLog.configure()
-    val res = telegramBotWithBehaviourAndLongPolling(
-        AppConfig.botToken(),
-        CoroutineScope(Dispatchers.IO),
-        defaultExceptionsHandler = KSLogExceptionsHandler,
-        autoSkipTimeoutExceptions = true,
-        builder = {
-            includeMiddlewares {
-                loggingMiddleware(AppConfig.appName())
-                middlewares.invoke(this)
-            }
-        },
-        block = block)
+    val res =
+        telegramBotWithBehaviourAndLongPolling(
+            AppConfig.botToken(),
+            CoroutineScope(Dispatchers.IO),
+            defaultExceptionsHandler = KSLogExceptionsHandler,
+            autoSkipTimeoutExceptions = true,
+            builder = {
+                includeMiddlewares {
+                    loggingMiddleware(AppConfig.appName())
+                    middlewares.invoke(this)
+                }
+            },
+            block = block
+        )
     HealthCheck.addBot(res.first)
     return res
 }

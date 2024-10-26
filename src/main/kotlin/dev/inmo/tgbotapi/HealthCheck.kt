@@ -21,18 +21,18 @@ class HealthCheck(bot: TelegramBot) {
 
         init {
             embeddedServer(Netty, port = 81) {
-                routing {
-                    get("/health") {
-                        try {
-                            bots.forEach {  it.getMe()  }
-                            call.respond(HttpStatusCode.OK)
-                        } catch (_: Throwable) {
-                            call.respond(HttpStatusCode.BadRequest)
+                    routing {
+                        get("/health") {
+                            try {
+                                bots.forEach { it.getMe() }
+                                call.respond(HttpStatusCode.OK)
+                            } catch (_: Throwable) {
+                                call.respond(HttpStatusCode.BadRequest)
+                            }
                         }
                     }
                 }
-            }.start(wait = false)
+                .start(wait = false)
         }
     }
-
 }

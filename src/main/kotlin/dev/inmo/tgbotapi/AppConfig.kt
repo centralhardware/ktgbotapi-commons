@@ -12,5 +12,4 @@ object AppConfig {
 
     fun appName() = appName ?: throw IllegalStateException("appName is null")
     fun botToken() = System.getenv("BOT_TOKEN")
-
 }
