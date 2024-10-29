@@ -18,7 +18,7 @@ val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
 @OptIn(Warning::class)
 suspend fun longPolling(
     middlewares: TelegramBotMiddlewaresPipelinesHandler.Builder.() -> Unit = {},
-    block: BehaviourContextReceiver<Unit>
+    block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
     KSLog.configure()
     val res =
@@ -33,7 +33,7 @@ suspend fun longPolling(
                     middlewares.invoke(this)
                 }
             },
-            block = block
+            block = block,
         )
     HealthCheck.addBot(res.first)
     return res
