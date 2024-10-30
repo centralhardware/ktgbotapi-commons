@@ -13,7 +13,7 @@ repositories {
     maven("https://jitpack.io")
 }
 
-val ktorVersion = "2.3.12";
+val ktorVersion = "3.0.1";
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.17.0")
