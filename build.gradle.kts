@@ -13,7 +13,7 @@ repositories {
     maven("https://jitpack.io")
 }
 
-val ktorVersion = "2.3.12";
+val ktorVersion = "3.0.1"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.17.0")
@@ -22,8 +22,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
     implementation("dev.inmo:kslog:1.3.6")
-    implementation("dev.inmo:tgbotapi:18.2.3")
-    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:1117274ee1")
+    implementation("dev.inmo:tgbotapi:19.0.0")
+    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:2d499d12f9")
 }
 
 tasks.test {
