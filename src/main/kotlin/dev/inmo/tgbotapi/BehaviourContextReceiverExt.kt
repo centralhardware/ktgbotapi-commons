@@ -14,19 +14,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import me.centralhardware.telegram.loggingMiddleware
 
-val KSLogExceptionsHandler = { t: Throwable -> KSLog.warning("", t) }
-
 @OptIn(Warning::class)
 suspend fun longPolling(
     middlewares: TelegramBotMiddlewaresPipelinesHandler.Builder.() -> Unit = {},
     block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
+    HealthCheck.health()
     KSLog.configure()
     val res =
         telegramBotWithBehaviourAndLongPolling(
             AppConfig.botToken(),
             CoroutineScope(Dispatchers.IO),
-            defaultExceptionsHandler = KSLogExceptionsHandler,
+            defaultExceptionsHandler = { t: Throwable -> KSLog.warning("", t) },
             autoSkipTimeoutExceptions = true,
             builder = {
                 includeMiddlewares {

@@ -8,29 +8,28 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-class HealthCheck(bot: TelegramBot) {
+object HealthCheck {
 
-    companion object {
-        private val bots: MutableSet<TelegramBot> = mutableSetOf()
+    private val bots: MutableSet<TelegramBot> = mutableSetOf()
 
-        fun addBot(bot: TelegramBot) {
-            bots.add(bot)
-        }
+    fun addBot(bot: TelegramBot) {
+        bots.add(bot)
+    }
 
-        init {
-            embeddedServer(Netty, port = 81) {
-                    routing {
-                        get("/health") {
-                            try {
-                                bots.forEach { it.getMe() }
-                                call.respond(HttpStatusCode.OK)
-                            } catch (_: Throwable) {
-                                call.respond(HttpStatusCode.BadRequest)
-                            }
+    init {
+        embeddedServer(Netty, port = 81) {
+                routing {
+                    get("/health") {
+                        if (health()) {
+                            call.respond(HttpStatusCode.OK)
+                        } else {
+                            call.respond(HttpStatusCode.BadRequest)
                         }
                     }
                 }
-                .start(wait = false)
-        }
+            }
+            .start(wait = false)
     }
+
+    suspend fun health(): Boolean = runCatching { bots.forEach { it.getMe() } }.isSuccess
 }
