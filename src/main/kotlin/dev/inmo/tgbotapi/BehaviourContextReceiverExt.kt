@@ -34,7 +34,6 @@ suspend fun longPolling(
                     stdoutLogging()
                     middlewares.invoke(this)
                     addMiddleware { ExceptionsThrottlerTelegramBotMiddleware() }
-
                 }
             },
             block = block,
