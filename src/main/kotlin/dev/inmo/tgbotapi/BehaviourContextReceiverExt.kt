@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import me.centralhardware.telegram.loggingMiddleware
+import me.centralhardware.telegram.stdoutLogging
 
 @OptIn(Warning::class)
 suspend fun longPolling(
@@ -30,8 +31,10 @@ suspend fun longPolling(
             builder = {
                 includeMiddlewares {
                     loggingMiddleware(AppConfig.appName())
+                    stdoutLogging()
                     middlewares.invoke(this)
                     addMiddleware { ExceptionsThrottlerTelegramBotMiddleware() }
+
                 }
             },
             block = block,
