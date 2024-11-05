@@ -14,15 +14,15 @@ object Trace {
             throw RuntimeException(e)
         }
 
-    fun save(param: Map<String, String>) =
+    fun save(event: String, param: Map<String, String>) =
         sessionOf(dataSource)
             .execute(
                 queryOf(
                     """
-        INSERT INTO trace (date_time, appName, param) 
-        VALUES (now(), :appName, :param)
+        INSERT INTO trace (date_time, appName, param, event) 
+        VALUES (now(), :appName, :param, :event)
     """,
-                    mapOf("appName" to AppConfig.appName(), "param" to param),
+                    mapOf("appName" to AppConfig.appName(), "param" to param, "event" to event),
                 )
             )
 }

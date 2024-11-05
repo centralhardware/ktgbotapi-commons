@@ -14,7 +14,7 @@ suspend fun main() {
         CoroutineScope(Dispatchers.IO),
     ) {
         onText {
-            Trace.save(mapOf("test" to "test"))
+            Trace.save("test", mapOf("test" to "test"))
         }
     }.second.join()
 }
