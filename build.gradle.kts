@@ -25,6 +25,10 @@ dependencies {
     implementation("dev.inmo:tgbotapi:20.0.0")
     implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:dced4207af")
     implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:433b9934c3")
+
+    implementation("com.clickhouse:clickhouse-jdbc:0.7.1")
+    implementation("com.clickhouse:clickhouse-http-client:0.7.1")
+    implementation("com.github.seratch:kotliquery:1.9.0")
 }
 
 tasks.test {
