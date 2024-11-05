@@ -19,7 +19,7 @@ object Trace {
             .execute(
                 queryOf(
                     """
-        INSERT INTO trace (date_time, appName, param, event) 
+        INSERT INTO bot_log.trace (date_time, appName, param, event) 
         VALUES (now(), :appName, :param, :event)
     """,
                     mapOf("appName" to AppConfig.appName(), "param" to param, "event" to event),
