@@ -14,6 +14,7 @@ repositories {
 }
 
 val ktorVersion = "3.0.1"
+val clickhouseVersion = "0.7.1-patch1"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.17.0")
@@ -26,8 +27,8 @@ dependencies {
     implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:9eddece18d")
     implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:433b9934c3")
 
-    implementation("com.clickhouse:clickhouse-jdbc:0.7.1")
-    implementation("com.clickhouse:clickhouse-http-client:0.7.1")
+    implementation("com.clickhouse:clickhouse-jdbc:$clickhouseVersion")
+    implementation("com.clickhouse:clickhouse-http-client:$clickhouseVersion")
     implementation("com.github.seratch:kotliquery:1.9.0")
 }
 
