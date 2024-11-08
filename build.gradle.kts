@@ -2,7 +2,6 @@ plugins {
     java
     `maven-publish`
     kotlin("jvm") version "2.0.21"
-    id("com.ncorti.ktfmt.gradle") version "0.21.0"
 }
 
 group = "me.centralhardware"
@@ -48,8 +47,4 @@ publishing {
             from(components["java"])
         }
     }
-}
-
-ktfmt {
-    kotlinLangStyle()
 }
