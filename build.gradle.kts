@@ -22,7 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
     implementation("dev.inmo:kslog:1.3.6")
-    implementation("dev.inmo:tgbotapi:20.0.0")
+    implementation("dev.inmo:tgbotapi:20.0.1")
     implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:c36af895dd")
     implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:90f47ea362")
 
