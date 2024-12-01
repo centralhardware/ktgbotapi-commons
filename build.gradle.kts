@@ -22,9 +22,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
 
     implementation("dev.inmo:kslog:1.3.6")
-    implementation("dev.inmo:tgbotapi:20.0.1")
-    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:3cacb34eda")
-    implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:90f47ea362")
+    implementation("dev.inmo:tgbotapi:21.0.0")
+    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:f05bbaf481")
+    implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:abcdd42e61")
 
     implementation("com.clickhouse:clickhouse-jdbc:$clickhouseVersion")
     implementation("com.clickhouse:clickhouse-http-client:$clickhouseVersion")
