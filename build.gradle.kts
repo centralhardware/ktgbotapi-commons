@@ -13,7 +13,7 @@ repositories {
 }
 
 val ktorVersion = "3.1.0"
-val clickhouseVersion = "0.8.0"
+val clickhouseVersion = "0.8.1"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.17.0")
