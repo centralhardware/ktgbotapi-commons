@@ -1,5 +1,7 @@
 package me.centralhardware.telegram
 
+import dev.inmo.kslog.common.KSLog
+import dev.inmo.kslog.common.configure
 import dev.inmo.tgbotapi.AppConfig
 import dev.inmo.tgbotapi.Trace
 import dev.inmo.tgbotapi.extensions.behaviour_builder.telegramBotWithBehaviourAndLongPolling
@@ -9,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 
 suspend fun main() {
     AppConfig.init("integrationTest")
+    KSLog.configure()
     telegramBotWithBehaviourAndLongPolling(
         System.getenv("BOT_TOKEN"),
         CoroutineScope(Dispatchers.IO),

@@ -1,6 +1,7 @@
 package dev.inmo.kslog.common
 
 import dev.inmo.tgbotapi.AppConfig
+import io.ktor.utils.io.CancellationException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import org.apache.commons.lang3.BooleanUtils
@@ -18,7 +19,7 @@ fun KSLog.configure() {
         }
     KSLoggerDefaultPlatformLoggerLambda =
         fun(_, _, message, throwable) {
-            if (throwable != null && throwable::class.simpleName == "JobCancellationException")
+            if (throwable != null && throwable is CancellationException)
                 return
             println("${getDateTime()} $message")
             if (throwable != null) {
