@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     implementation(project(":"))
-    implementation("dev.inmo:tgbotapi:25.0.0")
+    implementation("dev.inmo:tgbotapi:25.0.1")
 }
 
 tasks.test {
