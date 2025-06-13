@@ -12,7 +12,7 @@ repositories {
     maven("https://jitpack.io")
 }
 
-val ktorVersion = "3.1.3"
+val ktorVersion = "3.2.0"
 val clickhouseVersion = "0.9.0"
 
 dependencies {
