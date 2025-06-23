@@ -1,7 +1,7 @@
 plugins {
     java
     `maven-publish`
-    kotlin("jvm") version "2.1.21"
+    kotlin("jvm") version "2.2.0"
 }
 
 group = "me.centralhardware"
