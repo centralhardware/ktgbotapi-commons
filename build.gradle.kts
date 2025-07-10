@@ -16,7 +16,7 @@ val ktorVersion = "3.2.1"
 val clickhouseVersion = "0.9.0"
 
 dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
+    implementation("org.apache.commons:commons-lang3:3.18.0")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
