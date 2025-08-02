@@ -24,7 +24,6 @@ suspend fun longPolling(
     subcontextInitialAction: CustomBehaviourContextAndTypeReceiver<BehaviourContext, Unit, Update> = {},
     block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
-    HealthCheck.health()
     KSLog.configure()
     val res =
         telegramBotWithBehaviourAndLongPolling(
@@ -43,6 +42,5 @@ suspend fun longPolling(
             subcontextInitialAction = subcontextInitialAction,
             block = block,
         )
-    HealthCheck.addBot(res.first)
     return res
 }
