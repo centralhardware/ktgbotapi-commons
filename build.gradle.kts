@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.apache.commons:commons-lang3:3.17.0")
+    implementation("org.apache.commons:commons-lang3:3.18.0")
 
     implementation("dev.inmo:kslog:1.5.0")
     implementation("dev.inmo:tgbotapi:27.1.0")
