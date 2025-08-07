@@ -1,7 +1,8 @@
 package dev.inmo.tgbotapi
 
 import dev.inmo.kslog.common.KSLog
-import dev.inmo.kslog.common.configure
+import dev.inmo.kslog.common.configureLogger
+import dev.inmo.kslog.common.info
 import dev.inmo.kslog.common.warning
 import dev.inmo.micro_utils.common.Warning
 import dev.inmo.tgbotapi.bot.TelegramBot
@@ -24,7 +25,7 @@ suspend fun longPolling(
     subcontextInitialAction: CustomBehaviourContextAndTypeReceiver<BehaviourContext, Unit, Update> = {},
     block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
-    KSLog.configure()
+    configureLogger()
     val res =
         telegramBotWithBehaviourAndLongPolling(
             AppConfig.botToken(),
@@ -42,5 +43,6 @@ suspend fun longPolling(
             subcontextInitialAction = subcontextInitialAction,
             block = block,
         )
+    KSLog.info("${AppConfig.appName()} started")
     return res
 }

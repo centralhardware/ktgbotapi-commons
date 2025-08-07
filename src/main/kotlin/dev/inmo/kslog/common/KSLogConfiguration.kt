@@ -10,7 +10,7 @@ val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
-fun KSLog.configure() {
+fun configureLogger() {
     val minLogLevel =
         if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
             LogLevel.DEBUG
