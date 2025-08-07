@@ -4,10 +4,8 @@ plugins {
     kotlin("jvm") version "2.2.0"
 }
 
-val tgbotapiVersion = "27.1.2"
-
 group = "me.centralhardware"
-version = tgbotapiVersion
+version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -18,7 +16,7 @@ dependencies {
     implementation("org.apache.commons:commons-lang3:3.18.0")
 
     implementation("dev.inmo:kslog:1.5.0")
-    implementation("dev.inmo:tgbotapi:$tgbotapiVersion")
+    implementation("dev.inmo:tgbotapi:27.1.2")
     implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:50869a92bf")
     implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:704657ed0d")
 }
@@ -35,9 +33,8 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = "me.centralhardware"
             artifactId = "bot-common"
-            version = tgbotapiVersion
+            version = "1.0-SNAPSHOT"
             from(components["java"])
         }
     }
 }
-
