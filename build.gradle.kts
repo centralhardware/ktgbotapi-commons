@@ -19,8 +19,8 @@ dependencies {
 
     implementation("dev.inmo:kslog:1.5.0")
     implementation("dev.inmo:tgbotapi:$ktgbotapiVersion")
-    implementation("com.github.centralhardware:ktgbotapi-clickhouse-logging-middleware:$ktgbotapiVersion")
-    implementation("com.github.centralhardware:ktgbotapi-stdout-logging-middleware:$ktgbotapiVersion")
+    implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-clickhouse-logging-middleware:$ktgbotapiVersion")
+    implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-stdout-logging-middleware:$ktgbotapiVersion")
 }
 
 tasks.test {
