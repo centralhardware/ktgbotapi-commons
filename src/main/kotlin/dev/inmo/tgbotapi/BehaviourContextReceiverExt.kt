@@ -16,8 +16,8 @@ import dev.inmo.tgbotapi.types.update.abstracts.Update
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import me.centralhardware.telegram.clickhouseLogging
-import me.centralhardware.telegram.stdoutLogging
+import me.centralhardware.telegram.middleware.clickhouseLogging
+import me.centralhardware.telegram.middleware.stdoutLogging
 
 @OptIn(Warning::class)
 suspend fun longPolling(
