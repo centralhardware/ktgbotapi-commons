@@ -4,6 +4,7 @@ import dev.inmo.tgbotapi.AppConfig
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import org.apache.commons.lang3.BooleanUtils
+import kotlin.coroutines.cancellation.CancellationException
 
 val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 
@@ -18,6 +19,8 @@ fun configureLogger() {
         }
     KSLoggerDefaultPlatformLoggerLambda =
         fun(_, _, message, throwable) {
+            if (throwable != null && throwable is CancellationException)
+                return
             println("${getDateTime()} $message")
             if (throwable != null) {
                 println(throwable.stackTraceToString())
