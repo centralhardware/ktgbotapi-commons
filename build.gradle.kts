@@ -17,7 +17,7 @@ val ktgbotapiVersion = "29.0.0"
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.19.0")
 
-    implementation("dev.inmo:kslog:1.5.0")
+    implementation("dev.inmo:kslog:1.5.1")
     implementation("dev.inmo:tgbotapi:$ktgbotapiVersion")
     implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-clickhouse-logging-middleware:$ktgbotapiVersion")
     implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-stdout-logging-middleware:$ktgbotapiVersion")
