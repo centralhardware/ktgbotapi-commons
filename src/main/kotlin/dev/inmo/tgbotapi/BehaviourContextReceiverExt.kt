@@ -16,7 +16,6 @@ import dev.inmo.tgbotapi.types.update.abstracts.Update
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import me.centralhardware.telegram.middleware.clickhouseLogging
 import me.centralhardware.telegram.middleware.stdoutLogging
 
 @OptIn(Warning::class)
@@ -35,7 +34,6 @@ suspend fun longPolling(
             builder = {
                 includeMiddlewares {
                     addMiddleware { ExceptionsThrottlerTelegramBotMiddleware() }
-                    clickhouseLogging(AppConfig.appName())
                     stdoutLogging()
                     middlewares.invoke(this)
                 }
