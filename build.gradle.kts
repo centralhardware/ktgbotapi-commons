@@ -12,7 +12,7 @@ repositories {
     maven("https://jitpack.io")
 }
 
-val ktgbotapiVersion = "29.0.0"
+val ktgbotapiVersion = "30.0.2"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.20.0")
