@@ -20,6 +20,7 @@ dependencies {
     implementation("dev.inmo:kslog:1.6.1")
     implementation("dev.inmo:tgbotapi:$ktgbotapiVersion")
     implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-stdout-logging-middleware:$ktgbotapiVersion")
+    implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-clickhouse-logging-middleware:2f4d1fac")
 }
 
 tasks.test {
