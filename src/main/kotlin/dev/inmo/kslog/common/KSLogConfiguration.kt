@@ -1,16 +1,15 @@
 package dev.inmo.kslog.common
 
-import dev.inmo.tgbotapi.AppConfig
+import org.apache.commons.lang3.BooleanUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import org.apache.commons.lang3.BooleanUtils
 import kotlin.coroutines.cancellation.CancellationException
 
 val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
-fun configureLogger() {
+fun configureLogger(botName: String) {
     val minLogLevel =
         if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
             LogLevel.DEBUG
@@ -26,5 +25,5 @@ fun configureLogger() {
                 println(throwable.stackTraceToString())
             }
         }
-    setDefaultKSLog(KSLog(AppConfig.appName(), minLoggingLevel = minLogLevel))
+    setDefaultKSLog(KSLog(botName, minLoggingLevel = minLogLevel))
 }

@@ -28,7 +28,7 @@ suspend fun longPolling(
     subcontextInitialAction: CustomBehaviourContextAndTypeReceiver<BehaviourContext, Unit, Update> = {},
     block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
-    configureLogger()
+    configureLogger(botName)
     val res =
         telegramBotWithBehaviourAndLongPolling(
             AppConfig.botToken(),
@@ -52,6 +52,6 @@ suspend fun longPolling(
             },
             block = block,
         )
-    KSLog.info("${AppConfig.appName()} started")
+    KSLog.info("$botName started")
     return res
 }
