@@ -27,9 +27,6 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
-kotlin {
-    jvmToolchain(24)
-}
 
 publishing {
     publications {
