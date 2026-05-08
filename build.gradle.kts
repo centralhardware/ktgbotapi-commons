@@ -21,7 +21,7 @@ dependencies {
     implementation("dev.inmo:tgbotapi:$ktgbotapiVersion")
     implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-stdout-logging-middleware:0f0111e9")
     implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-clickhouse-logging-middleware:0f0111e9")
-    implementation("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-restrict-access-middleware:0f0111e9")
+    api("com.github.centralhardware.ktgbotapi-middlewars:ktgbotapi-restrict-access-middleware:0f0111e9")
 }
 
 tasks.test {
