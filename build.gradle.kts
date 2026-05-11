@@ -13,7 +13,7 @@ repositories {
 }
 
 val ktgbotapiVersion = "33.1.0"
-val middlewareVersion = "8cfeacd7"
+val middlewareVersion = "33.1.0"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.20.0")
