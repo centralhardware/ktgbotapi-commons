@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    application
 }
 
 group = "me.centralhardware.telegram"
@@ -12,7 +13,11 @@ repositories {
 
 dependencies {
     implementation(project(":ktgbotapi-commons-core"))
-    implementation("dev.inmo:tgbotapi:28.0.0")
+    runtimeOnly("ch.qos.logback:logback-classic:1.5.12")
+}
+
+application {
+    mainClass.set("me.centralhardware.telegram.MainKt")
 }
 
 tasks.test {

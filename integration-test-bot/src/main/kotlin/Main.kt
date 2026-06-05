@@ -1,4 +1,4 @@
-package me.centralhardware.telegram.middleware.testbot
+package me.centralhardware.telegram
 
 import dev.inmo.micro_utils.common.Warning
 import dev.inmo.tgbotapi.extensions.api.bot.setMyCommands
@@ -6,37 +6,24 @@ import dev.inmo.tgbotapi.extensions.api.deleteMessage
 import dev.inmo.tgbotapi.extensions.api.send.reply
 import dev.inmo.tgbotapi.extensions.api.send.sendMessage
 import dev.inmo.tgbotapi.extensions.behaviour_builder.expectations.waitTextMessage
-import dev.inmo.tgbotapi.extensions.behaviour_builder.telegramBotWithBehaviourAndLongPolling
 import dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling.onCommand
 import dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling.onText
+import dev.inmo.tgbotapi.longPolling
 import dev.inmo.tgbotapi.types.BotCommand
 import dev.inmo.tgbotapi.types.MessageId
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import me.centralhardware.telegram.middleware.clickHouseExceptionsHandler
-import me.centralhardware.telegram.middleware.clickHouseLogging
-import me.centralhardware.telegram.middleware.clickHouseRequestIdContext
 
 /**
- * Required env vars: TELEGRAM_TOKEN, CLICKHOUSE_JDBC_URL.
+ * Manual integration-test bot. Exercises the commons-core `longPolling` helper,
+ * which wires up config (BOT_TOKEN), stdout + ClickHouse logging and request-id tracing.
+ *
+ * Required env vars: BOT_TOKEN, CLICKHOUSE_JDBC_URL.
  * Apply migration once: ktgbotapi-clickhouse-logging-middleware/db/migration/V1__create_bot_requests.sql
  */
 @OptIn(Warning::class)
-fun main(): Unit = runBlocking {
-    val token = System.getenv("TELEGRAM_TOKEN")
-        ?: error("TELEGRAM_TOKEN env var is not set")
-
-    val (_, job) = telegramBotWithBehaviourAndLongPolling(
-        token = token,
-        builder = {
-            includeMiddlewares {
-                clickHouseLogging(botName = "test_bot")
-            }
-        },
-        subcontextInitialAction = clickHouseRequestIdContext(),
-        defaultExceptionsHandler = clickHouseExceptionsHandler(botName = "test_bot"),
-    ) {
+suspend fun main() {
+    val (_, job) = longPolling("integration_test") {
         setMyCommands(
             BotCommand("start", "Show greeting"),
             BotCommand("ping", "Health check"),
