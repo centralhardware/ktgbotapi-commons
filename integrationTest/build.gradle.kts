@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":"))
+    implementation(project(":ktgbotapi-commons-core"))
     implementation("dev.inmo:tgbotapi:28.0.0")
 }
 

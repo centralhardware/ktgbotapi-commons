@@ -1,20 +1,20 @@
-[![](https://jitpack.io/v/centralhardware/telegram-bot-commons.svg)](https://jitpack.io/#centralhardware/telegram-bot-commons)
+[![](https://jitpack.io/v/centralhardware/ktgbotapi-commons.svg)](https://jitpack.io/#centralhardware/ktgbotapi-commons)
 
 # Telegram Bot Commons
 
-A utility library for Kotlin Telegram bots that provides common functionality for logging, health checks, configuration, and tracing.
+A multi-module utility library for Kotlin Telegram bots ([ktgbotapi](https://github.com/InsanusMokrassar/ktgbotapi)) that provides common functionality for logging, access control, conversations, configuration, and tracing.
 
-## Features
+## Modules
 
-- **Easy Bot Setup**: Simplified setup for Telegram bots with long polling
-- **Health Check Endpoint**: Built-in health check endpoint on port 81
-- **Logging**: Configurable logging with KSLog
-- **Tracing**: Event tracing with ClickHouse integration
-- **Configuration**: Simple application configuration management
+| Module | Artifact | Description |
+|--------|----------|-------------|
+| `ktgbotapi-commons-core` | `commons` | Bot setup helpers (long polling, logging, config) |
+| `ktgbotapi-conversation` | `conversation` | Multi-step conversation / dialog state machine |
+| `ktgbotapi-stdout-logging-middleware` | `stdout-logging-middleware` | Logs incoming/outgoing requests to stdout |
+| `ktgbotapi-clickhouse-logging-middleware` | `clickhouse-logging-middleware` | Logs bot requests to ClickHouse |
+| `ktgbotapi-restrict-access-middleware` | `restrict-access-middleware` | Restricts bot access to allowed users |
 
 ## Installation
-
-### Gradle (Kotlin DSL)
 
 ```kotlin
 repositories {
@@ -23,20 +23,12 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.centralhardware:telegram-bot-commons:latest-version")
-}
-```
+    // pull the core library (transitively brings the middlewares)
+    implementation("com.github.centralhardware.ktgbotapi-commons:commons:latest-version")
 
-### Gradle (Groovy)
-
-```groovy
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    implementation 'com.github.centralhardware:telegram-bot-commons:latest-version'
+    // or add individual modules
+    implementation("com.github.centralhardware.ktgbotapi-commons:conversation:latest-version")
+    implementation("com.github.centralhardware.ktgbotapi-commons:clickhouse-logging-middleware:latest-version")
 }
 ```
 
