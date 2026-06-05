@@ -9,6 +9,9 @@ val formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss.SSS")
 
 fun getDateTime(): String = LocalDateTime.now().format(formatter)
 
+private fun Throwable.isHttpRequestTimeout(): Boolean =
+    this::class.qualifiedName == "io.ktor.client.plugins.HttpRequestTimeoutException"
+
 fun configureLogger(botName: String) {
     val minLogLevel =
         if (BooleanUtils.toBooleanObject(System.getenv("DEBUG") ?: "false")) {
@@ -19,6 +22,9 @@ fun configureLogger(botName: String) {
     KSLoggerDefaultPlatformLoggerLambda =
         fun(_, _, message, throwable) {
             if (throwable != null && throwable is CancellationException)
+                return
+            // Benign long-polling getUpdates timeouts — not worth logging.
+            if (throwable != null && throwable.isHttpRequestTimeout())
                 return
             println("${getDateTime()} $message")
             if (throwable != null) {
