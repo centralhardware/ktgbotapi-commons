@@ -1,1 +1,0 @@
-alter table admin_actions2 update action_type = replace(action_type, 'ChannelAdminLogEventAction', '') where true

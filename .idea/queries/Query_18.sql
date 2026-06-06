@@ -1,1 +1,0 @@
-create database english_memo

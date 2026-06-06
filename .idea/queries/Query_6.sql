@@ -1,1 +1,0 @@
-alter table health.metrics delete where true
