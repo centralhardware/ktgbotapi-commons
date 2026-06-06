@@ -6,12 +6,19 @@ import dev.inmo.tgbotapi.extensions.api.send.send
 import dev.inmo.tgbotapi.extensions.api.send.sendMessage
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContext
 import dev.inmo.tgbotapi.extensions.behaviour_builder.createSubContextAndDoAsynchronouslyWithUpdatesFilter
+import dev.inmo.tgbotapi.extensions.behaviour_builder.expectations.waitContentMessage
 import dev.inmo.tgbotapi.extensions.behaviour_builder.expectations.waitMessageDataCallbackQuery
 import dev.inmo.tgbotapi.extensions.behaviour_builder.expectations.waitTextMessage
+import dev.inmo.tgbotapi.extensions.utils.types.buttons.inlineKeyboard
+import dev.inmo.tgbotapi.extensions.utils.types.buttons.inlineQueryInCurrentChatButton
 import dev.inmo.tgbotapi.extensions.utils.types.buttons.replyKeyboard
 import dev.inmo.tgbotapi.extensions.utils.types.buttons.simpleButton
 import dev.inmo.tgbotapi.types.IdChatIdentifier
 import dev.inmo.tgbotapi.types.buttons.InlineKeyboardMarkup
+import dev.inmo.tgbotapi.types.buttons.KeyboardMarkup
+import dev.inmo.tgbotapi.types.message.abstracts.CommonMessage
+import dev.inmo.tgbotapi.types.message.content.PhotoContent
+import dev.inmo.tgbotapi.types.message.content.TextContent
 import dev.inmo.tgbotapi.utils.row
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -189,13 +196,15 @@ suspend fun <T> BehaviourContext.waitMultiple(
     chatId: IdChatIdentifier,
     prompt: String,
     maxCount: Int = Int.MAX_VALUE,
+    keyboard: KeyboardMarkup? = null,
     duplicateMessage: String = "Already added",
     savedMessage: String = "Saved. Send the next one or $COMPLETE",
     parse: (String) -> Parsed<T>,
 ): Set<T> {
     val results = LinkedHashSet<T>()
     while (results.size < maxCount) {
-        sendMessage(chatId, prompt)
+        if (keyboard != null) send(chatId, text = prompt, replyMarkup = keyboard)
+        else sendMessage(chatId, prompt)
         val text = nextText(chatId)
         if (text == COMPLETE) break
         when (val p = parse(text)) {
@@ -206,6 +215,89 @@ suspend fun <T> BehaviourContext.waitMultiple(
         }
     }
     return results
+}
+
+/**
+ * Send [prompt], wait for text and parse it as a whole number. Non-numeric input shows
+ * [invalidMessage] and repeats [prompt]; a parsed number is additionally checked by [validate]
+ * (returns an error string to show, or null when acceptable). Returns null when [allowSkip] is
+ * true and the user sends [SKIP]. [CANCEL] aborts.
+ */
+suspend fun BehaviourContext.waitInt(
+    chatId: IdChatIdentifier,
+    prompt: String,
+    allowSkip: Boolean = false,
+    invalidMessage: String = "Send a whole number",
+    validate: (Int) -> String? = { null },
+): Int? = waitParsed(chatId, prompt, allowSkip) { text ->
+    val number = text.toIntOrNull() ?: return@waitParsed Parsed.Err(invalidMessage)
+    when (val error = validate(number)) {
+        null -> Parsed.Ok(number)
+        else -> Parsed.Err(error)
+    }
+}
+
+/**
+ * Send [prompt] and wait until the user uploads a photo, returning that message. Sending text
+ * other than [SKIP]/[CANCEL] shows [invalidMessage] and repeats. Returns null when [allowSkip]
+ * is true and the user sends [SKIP]. [CANCEL] aborts.
+ */
+suspend fun BehaviourContext.waitPhoto(
+    chatId: IdChatIdentifier,
+    prompt: String,
+    allowSkip: Boolean = false,
+    invalidMessage: String = "Send a photo",
+): CommonMessage<PhotoContent>? {
+    while (true) {
+        sendMessage(chatId, prompt)
+        val message = waitContentMessage().filter { it.chat.id == chatId }.first()
+        val content = message.content
+        if (content is TextContent) {
+            val text = content.text.trim()
+            if (text == CANCEL) throw ConversationCancelledException()
+            if (allowSkip && text == SKIP) return null
+        }
+        if (content is PhotoContent) {
+            @Suppress("UNCHECKED_CAST")
+            return message as CommonMessage<PhotoContent>
+        }
+        sendMessage(chatId, invalidMessage)
+    }
+}
+
+/**
+ * Build a keyboard with a single button that switches the user into inline-query mode in the
+ * current chat, pre-filled with [query]. Pair with [waitInlineSearch] to let the user pick a
+ * result via inline search and send it back as a normal message.
+ */
+fun inlineSearchKeyboard(query: String, buttonText: String = "Search") = inlineKeyboard {
+    row { inlineQueryInCurrentChatButton(buttonText, query) }
+}
+
+/**
+ * Send [prompt] together with an inline-search button (see [inlineSearchKeyboard]) pre-filled
+ * with [query], then wait for the user to send back a text message (typically a result chosen
+ * via inline search). [validate] returns an error string to show, or null when acceptable.
+ * Returns null when [allowSkip] is true and the user sends [SKIP]. [CANCEL] aborts.
+ */
+suspend fun BehaviourContext.waitInlineSearch(
+    chatId: IdChatIdentifier,
+    prompt: String,
+    query: String,
+    buttonText: String = "Search",
+    allowSkip: Boolean = false,
+    validate: (String) -> String? = { null },
+): String? {
+    val keyboard = inlineSearchKeyboard(query, buttonText)
+    while (true) {
+        send(chatId, text = prompt, replyMarkup = keyboard)
+        val text = nextText(chatId)
+        if (allowSkip && text == SKIP) return null
+        when (val error = validate(text)) {
+            null -> return text
+            else -> sendMessage(chatId, error)
+        }
+    }
 }
 
 /**

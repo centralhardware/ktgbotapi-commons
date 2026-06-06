@@ -1,0 +1,1 @@
+alter table export delete where message == null || message = '';

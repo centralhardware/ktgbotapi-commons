@@ -1,0 +1,1 @@
+ALTER TABLE country_days_tracker add COLUMN bs UInt32

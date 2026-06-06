@@ -1,0 +1,1 @@
+alter table chats_log update client_id = 428985392 where client_id = 0
