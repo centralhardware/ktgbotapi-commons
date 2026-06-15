@@ -6,7 +6,7 @@ plugins {
 group = "me.centralhardware.telegram.middleware"
 
 dependencies {
-    implementation("dev.inmo:tgbotapi:33.1.0")
+    implementation("dev.inmo:tgbotapi:34.0.0")
     implementation("dev.inmo:kslog:1.6.0")
 }
 
