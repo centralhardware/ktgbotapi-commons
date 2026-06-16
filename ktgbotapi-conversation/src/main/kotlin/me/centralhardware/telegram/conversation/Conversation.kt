@@ -16,7 +16,7 @@ import dev.inmo.tgbotapi.extensions.utils.types.buttons.simpleButton
 import dev.inmo.tgbotapi.types.IdChatIdentifier
 import dev.inmo.tgbotapi.types.buttons.InlineKeyboardMarkup
 import dev.inmo.tgbotapi.types.buttons.KeyboardMarkup
-import dev.inmo.tgbotapi.types.message.abstracts.CommonMessage
+import dev.inmo.tgbotapi.types.message.abstracts.ChatContentMessage
 import dev.inmo.tgbotapi.types.message.content.PhotoContent
 import dev.inmo.tgbotapi.types.message.content.TextContent
 import dev.inmo.tgbotapi.utils.row
@@ -247,7 +247,7 @@ suspend fun BehaviourContext.waitPhoto(
     prompt: String,
     allowSkip: Boolean = false,
     invalidMessage: String = "Send a photo",
-): CommonMessage<PhotoContent>? {
+): ChatContentMessage<PhotoContent>? {
     while (true) {
         sendMessage(chatId, prompt)
         val message = waitContentMessage().filter { it.chat.id == chatId }.first()
@@ -259,7 +259,7 @@ suspend fun BehaviourContext.waitPhoto(
         }
         if (content is PhotoContent) {
             @Suppress("UNCHECKED_CAST")
-            return message as CommonMessage<PhotoContent>
+            return message as ChatContentMessage<PhotoContent>
         }
         sendMessage(chatId, invalidMessage)
     }
