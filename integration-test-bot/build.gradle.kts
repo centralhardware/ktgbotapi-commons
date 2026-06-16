@@ -14,7 +14,7 @@ repositories {
 dependencies {
     implementation(project(":ktgbotapi-commons-core"))
     implementation("dev.inmo:tgbotapi:34.0.0")
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.12")
+    runtimeOnly("ch.qos.logback:logback-classic:1.5.34")
 }
 
 application {
