@@ -6,7 +6,7 @@ plugins {
 group = "me.centralhardware"
 
 dependencies {
-    implementation("dev.inmo:tgbotapi:34.0.0")
+    implementation("dev.inmo:tgbotapi:35.0.0")
 }
 
 publishing {
