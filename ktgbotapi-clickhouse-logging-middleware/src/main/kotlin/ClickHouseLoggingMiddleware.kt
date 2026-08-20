@@ -47,11 +47,22 @@ import kotlinx.coroutines.launch
 import java.sql.DriverManager
 import java.sql.Timestamp
 import java.time.Instant
+import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
 private const val PENDING_TTL_MS = 60_000L
 private const val MAX_PENDING = 10_000
+
+// Log rows are written one per API call from many short-lived connections, which is exactly the
+// shape async inserts exist for: the server batches them into bigger parts instead of one part per
+// row. `wait_for_async_insert=0` makes the write fire-and-forget — a lost log row is cheaper than
+// blocking a bot handler on the flush. Server settings travel as `clickhouse_setting_`-prefixed
+// connection properties (needs clickhouse-jdbc >= 0.10.0, earlier versions pinned async_insert=0).
+private val INSERT_PROPERTIES = Properties().apply {
+    setProperty("clickhouse_setting_async_insert", "1")
+    setProperty("clickhouse_setting_wait_for_async_insert", "0")
+}
 
 private data class UpdateContext(
     val updateId: Long,
@@ -186,7 +197,7 @@ private fun writeRow(
     durationMs: Long,
 ) {
     runCatching {
-        DriverManager.getConnection(jdbcUrl).use { conn ->
+        DriverManager.getConnection(jdbcUrl, INSERT_PROPERTIES).use { conn ->
             conn.prepareStatement(
                 "INSERT INTO bot_requests " +
                     "(timestamp, bot, update_id, user_id, username, first_name, last_name, " +
@@ -235,7 +246,7 @@ fun clickHouseRequestIdContext(
 
 /**
  * Adds a middleware that logs each Telegram API call to ClickHouse (`bot_requests` table). One row
- * per call, written synchronously.
+ * per call, written as an async insert (the server batches rows; the bot doesn't wait for a flush).
  *
  * `GetUpdates` itself is never logged; on success its result is decomposed into one row per
  * incoming `Update`. Pair with [clickHouseRequestIdContext] for incoming-to-outgoing correlation
