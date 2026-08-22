@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     implementation(project(":ktgbotapi-commons-core"))
-    implementation("dev.inmo:tgbotapi:35.1.0")
+    implementation("dev.inmo:tgbotapi:36.1.0")
 }
 
 application {
