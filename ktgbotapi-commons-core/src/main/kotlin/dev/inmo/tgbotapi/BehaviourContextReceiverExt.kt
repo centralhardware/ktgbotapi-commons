@@ -52,6 +52,7 @@ suspend fun longPolling(
             },
             block = block,
         )
+    HealthCheck.register(botName, res.first)
     KSLog.info("$botName started")
     return res
 }
