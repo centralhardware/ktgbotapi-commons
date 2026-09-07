@@ -7,7 +7,7 @@ group = "me.centralhardware.telegram.middleware"
 
 dependencies {
     implementation("dev.inmo:tgbotapi:36.1.0")
-    implementation("dev.inmo:kslog:1.7.0")
+    implementation("dev.inmo:kslog:2.0.0")
 }
 
 publishing {
