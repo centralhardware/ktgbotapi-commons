@@ -9,6 +9,7 @@ import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContext
 import dev.inmo.tgbotapi.extensions.behaviour_builder.CustomBehaviourContextAndTypeReceiver
 import dev.inmo.tgbotapi.extensions.utils.extensions.raw.from
 import dev.inmo.tgbotapi.requests.GetUpdates
+import dev.inmo.tgbotapi.requests.bot.GetMe
 import dev.inmo.tgbotapi.requests.abstracts.MultipartRequest
 import dev.inmo.tgbotapi.requests.abstracts.Request
 import dev.inmo.tgbotapi.requests.abstracts.SimpleRequest
@@ -249,7 +250,7 @@ fun clickHouseRequestIdContext(
  * per call, written as an async insert (the server batches rows; the bot doesn't wait for a flush).
  *
  * `GetUpdates` itself is never logged; on success its result is decomposed into one row per
- * incoming `Update`. Pair with [clickHouseRequestIdContext] for incoming-to-outgoing correlation
+ * incoming `Update`. `GetMe` is never logged either — the health check polls it on a timer. Pair with [clickHouseRequestIdContext] for incoming-to-outgoing correlation
  * and [clickHouseExceptionsHandler] for exceptions thrown before the HTTP layer.
  *
  * Schema lives in `db/migration/V1__create_bot_requests.sql`.
@@ -265,7 +266,7 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
 
     addMiddleware {
         doOnBeforeCallFactoryMakeCall { request, _ ->
-            starts[request] = System.nanoTime()
+            if (request !is GetMe) starts[request] = System.nanoTime()
         }
         doOnRequestReturnResult { result, request, _ ->
             val startedNs = starts.remove(request)
@@ -273,6 +274,10 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
             val response = result.getOrNull()
 
             when {
+                // The health-check endpoint polls getMe on a timer; those rows say nothing about
+                // the bot's actual traffic and would swamp the log.
+                request is GetMe -> Unit
+
                 request is GetUpdates -> {
                     if (response is List<*>) {
                         response.filterIsInstance<Update>().forEach { update ->
