@@ -6,7 +6,7 @@ plugins {
 
 group = "me.centralhardware"
 
-val ktgbotapiVersion = "36.1.0"
+val ktgbotapiVersion = "37.0.0"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.21.0")
