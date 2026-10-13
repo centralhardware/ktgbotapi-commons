@@ -9,7 +9,7 @@ group = "me.centralhardware"
 val ktgbotapiVersion = "36.1.0"
 
 dependencies {
-    implementation("org.apache.commons:commons-lang3:3.20.0")
+    implementation("org.apache.commons:commons-lang3:3.21.0")
 
     api("dev.inmo:kslog:2.0.0")
     api("dev.inmo:tgbotapi:$ktgbotapiVersion")
