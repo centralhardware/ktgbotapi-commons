@@ -11,7 +11,7 @@ val ktgbotapiVersion = "37.0.0"
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.21.0")
 
-    api("dev.inmo:kslog:2.0.0")
+    api("dev.inmo:kslog:2.1.0")
     api("dev.inmo:tgbotapi:$ktgbotapiVersion")
     api(project(":ktgbotapi-conversation"))
     api(project(":ktgbotapi-stdout-logging-middleware"))
