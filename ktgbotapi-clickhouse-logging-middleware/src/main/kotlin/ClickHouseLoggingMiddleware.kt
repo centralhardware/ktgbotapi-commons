@@ -1,5 +1,6 @@
 package me.centralhardware.telegram.middleware
 
+import com.github.f4b6a3.tsid.TsidCreator
 import dev.inmo.kslog.common.KSLog
 import dev.inmo.kslog.common.error
 import dev.inmo.kslog.common.info
@@ -46,7 +47,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.security.SecureRandom
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Timestamp
@@ -96,30 +96,11 @@ private data class UpdateContext(
 }
 
 /**
- * Snowflake-shaped ids made locally: 41 bits of milliseconds, 10 bits of a per-process random
- * node id, 12 bits of counter. Unique across bot instances in practice and costs no database
- * round trip (they used to come from `SELECT generateSnowflakeID()`, two connections per update).
+ * Update ids are TSIDs (time-sorted 64-bit ids, Snowflake-shaped), made locally: unique across
+ * bot instances in practice and no database round trip (they used to come from
+ * `SELECT generateSnowflakeID()`, a connection per update).
  */
-internal object SnowflakeIds {
-    private val node = SecureRandom().nextInt(1 shl 10).toLong()
-    private val state = AtomicLong(0) // (ms shl 12) or sequence
-
-    fun next(): Long {
-        while (true) {
-            val prev = state.get()
-            val now = System.currentTimeMillis()
-            val prevMs = prev ushr 12
-            val next = if (now > prevMs) now shl 12 else prev + 1 // same ms (or clock behind): bump
-            if (state.compareAndSet(prev, next)) {
-                val ms = next ushr 12
-                val seq = next and 0xFFF
-                return (ms shl 22) or (node shl 12) or seq
-            }
-        }
-    }
-}
-
-private fun nextUpdateId(): Long = SnowflakeIds.next()
+private fun nextUpdateId(): Long = TsidCreator.getTsid().toLong()
 
 @OptIn(Warning::class, RiskFeature::class)
 private fun Update.extractUser(): User? = when (this) {
