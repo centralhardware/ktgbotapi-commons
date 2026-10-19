@@ -16,15 +16,12 @@ object ConversationState {
 
     fun hasActive(userId: Long): Boolean = active.containsKey(userId)
 
-    /** Register the running [job] for [userId]; returns false if one was already running. */
-    fun start(userId: Long, job: Job): Boolean {
-        if (hasActive(userId)) return false
-        active[userId] = job
-        return true
-    }
+    /** Register [job] for [userId], atomically; returns false if one was already running. */
+    fun start(userId: Long, job: Job): Boolean = active.putIfAbsent(userId, job) == null
 
-    fun end(userId: Long) {
-        active.remove(userId)
+    /** Unregister [job]; a no-op when another job holds [userId] (e.g. a rejected second start). */
+    fun end(userId: Long, job: Job) {
+        active.remove(userId, job)
     }
 
     /** Cancel the running conversation for [userId], if any. Returns true when one was cancelled. */

@@ -43,17 +43,27 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.security.SecureRandom
+import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Timestamp
 import java.time.Instant
+import java.util.Collections
+import java.util.IdentityHashMap
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.coroutineContext
 
 private const val PENDING_TTL_MS = 60_000L
 private const val MAX_PENDING = 10_000
+/** Rows waiting for the writer. Past this, new rows are dropped (and counted), never awaited. */
+private const val ROW_BUFFER = 10_000
+/** Rows per INSERT. */
+private const val BATCH_SIZE = 500
 
 // Log rows are written one per API call from many short-lived connections, which is exactly the
 // shape async inserts exist for: the server batches them into bigger parts instead of one part per
@@ -85,19 +95,31 @@ private data class UpdateContext(
     }
 }
 
-// Distributed-safe unique id via ClickHouse's built-in Snowflake generator (timestamp_ms +
-// machine_id + intra-ms counter). Available since ClickHouse 23.6. Each call returns a fresh id
-// regardless of how many bot instances share the database.
-private fun nextUpdateId(jdbcUrl: String): Long = runCatching {
-    DriverManager.getConnection(jdbcUrl).use { conn ->
-        conn.prepareStatement("SELECT generateSnowflakeID()").use { ps ->
-            ps.executeQuery().use { rs -> if (rs.next()) rs.getLong(1) else 0L }
+/**
+ * Snowflake-shaped ids made locally: 41 bits of milliseconds, 10 bits of a per-process random
+ * node id, 12 bits of counter. Unique across bot instances in practice and costs no database
+ * round trip (they used to come from `SELECT generateSnowflakeID()`, two connections per update).
+ */
+internal object SnowflakeIds {
+    private val node = SecureRandom().nextInt(1 shl 10).toLong()
+    private val state = AtomicLong(0) // (ms shl 12) or sequence
+
+    fun next(): Long {
+        while (true) {
+            val prev = state.get()
+            val now = System.currentTimeMillis()
+            val prevMs = prev ushr 12
+            val next = if (now > prevMs) now shl 12 else prev + 1 // same ms (or clock behind): bump
+            if (state.compareAndSet(prev, next)) {
+                val ms = next ushr 12
+                val seq = next and 0xFFF
+                return (ms shl 22) or (node shl 12) or seq
+            }
         }
     }
-}.getOrElse {
-    KSLog.error("Failed to fetch next update_id", it)
-    0L
 }
+
+private fun nextUpdateId(): Long = SnowflakeIds.next()
 
 @OptIn(Warning::class, RiskFeature::class)
 private fun Update.extractUser(): User? = when (this) {
@@ -186,6 +208,87 @@ private fun Request<*>.asJson(): String {
     }.getOrElse { toString() }
 }
 
+private class Row(
+    val timestamp: Instant,
+    val botName: String,
+    val ctx: UpdateContext,
+    val method: String,
+    val request: String,
+    val response: String,
+    val success: Boolean,
+    val error: String,
+    val durationMs: Long,
+)
+
+/**
+ * One background writer per JDBC URL: rows go into a bounded channel and a single coroutine on
+ * [Dispatchers.IO] inserts them in batches over one kept connection. Nothing on the bot's own
+ * path ever waits on ClickHouse; when it is slow or down the buffer fills and rows are dropped.
+ */
+private class RowWriter(private val jdbcUrl: String) {
+    private val rows = Channel<Row>(ROW_BUFFER)
+    private val dropped = AtomicLong()
+    private var connection: Connection? = null
+
+    init {
+        loadDriver()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            val batch = ArrayList<Row>(BATCH_SIZE)
+            for (first in rows) {
+                batch += first
+                while (batch.size < BATCH_SIZE) batch += rows.tryReceive().getOrNull() ?: break
+                runCatching { insert(batch) }.onFailure {
+                    KSLog.error("ClickHouse insert of ${batch.size} row(s) failed", it)
+                    runCatching { connection?.close() }
+                    connection = null
+                }
+                batch.clear()
+            }
+        }
+    }
+
+    fun offer(row: Row) {
+        if (rows.trySend(row).isFailure) {
+            val n = dropped.incrementAndGet()
+            if (n == 1L || n % 1000 == 0L) KSLog.error("ClickHouse log buffer full: $n row(s) dropped so far")
+        }
+    }
+
+    private fun insert(batch: List<Row>) {
+        val conn = connection?.takeIf { !it.isClosed }
+            ?: DriverManager.getConnection(jdbcUrl, INSERT_PROPERTIES).also { connection = it }
+        conn.prepareStatement(
+            "INSERT INTO bot_requests " +
+                "(timestamp, bot, update_id, user_id, username, first_name, last_name, " +
+                "method, request, response, success, error, duration_ms) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).use { ps ->
+            for (r in batch) {
+                ps.setTimestamp(1, Timestamp.from(r.timestamp))
+                ps.setString(2, r.botName)
+                ps.setLong(3, r.ctx.updateId)
+                ps.setLong(4, r.ctx.userId)
+                ps.setString(5, r.ctx.username)
+                ps.setString(6, r.ctx.firstName)
+                ps.setString(7, r.ctx.lastName)
+                ps.setString(8, r.method)
+                ps.setString(9, r.request)
+                ps.setString(10, r.response)
+                ps.setBoolean(11, r.success)
+                ps.setString(12, r.error)
+                ps.setLong(13, r.durationMs)
+                ps.addBatch()
+            }
+            ps.executeBatch()
+        }
+    }
+
+    companion object {
+        private val writers = ConcurrentHashMap<String, RowWriter>()
+        fun forUrl(jdbcUrl: String): RowWriter = writers.computeIfAbsent(jdbcUrl, ::RowWriter)
+    }
+}
+
 private fun writeRow(
     jdbcUrl: String,
     botName: String,
@@ -197,31 +300,9 @@ private fun writeRow(
     error: String,
     durationMs: Long,
 ) {
-    runCatching {
-        DriverManager.getConnection(jdbcUrl, INSERT_PROPERTIES).use { conn ->
-            conn.prepareStatement(
-                "INSERT INTO bot_requests " +
-                    "(timestamp, bot, update_id, user_id, username, first_name, last_name, " +
-                    "method, request, response, success, error, duration_ms) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            ).use { ps ->
-                ps.setTimestamp(1, Timestamp.from(Instant.now()))
-                ps.setString(2, botName)
-                ps.setLong(3, ctx.updateId)
-                ps.setLong(4, ctx.userId)
-                ps.setString(5, ctx.username)
-                ps.setString(6, ctx.firstName)
-                ps.setString(7, ctx.lastName)
-                ps.setString(8, method)
-                ps.setString(9, request)
-                ps.setString(10, response)
-                ps.setBoolean(11, success)
-                ps.setString(12, error)
-                ps.setLong(13, durationMs)
-                ps.executeUpdate()
-            }
-        }
-    }.onFailure { KSLog.error("ClickHouse insert failed", it) }
+    RowWriter.forUrl(jdbcUrl).offer(
+        Row(Instant.now(), botName, ctx, method, request, response, success, error, durationMs)
+    )
 }
 
 /**
@@ -237,7 +318,7 @@ fun clickHouseRequestIdContext(
         // get(), not remove(): one Update can match several triggers (e.g. onCommand + onText) and
         // each invokes subcontextInitialAction independently — they must all see the same id.
         val ctx = pendingContexts[update.updateId.long]
-            ?: UpdateContext.from(nextUpdateId(jdbcUrl), update.extractUser())
+            ?: UpdateContext.from(nextUpdateId(), update.extractUser())
         val job = coroutineContext[Job]
         if (job != null) {
             jobToContext[job] = ctx
@@ -247,7 +328,7 @@ fun clickHouseRequestIdContext(
 
 /**
  * Adds a middleware that logs each Telegram API call to ClickHouse (`bot_requests` table). One row
- * per call, written as an async insert (the server batches rows; the bot doesn't wait for a flush).
+ * per call, queued for a background writer that inserts in batches; the bot never waits on ClickHouse.
  *
  * `GetUpdates` itself is never logged; on success its result is decomposed into one row per
  * incoming `Update`. `GetMe` is never logged either — the health check polls it on a timer. Pair with [clickHouseRequestIdContext] for incoming-to-outgoing correlation
@@ -261,8 +342,9 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
     jdbcUrl: String = System.getenv("CLICKHOUSE_JDBC_URL")
         ?: error("CLICKHOUSE_JDBC_URL env var is not set"),
 ) {
-    loadDriver()
-    val starts = ConcurrentHashMap<Request<*>, Long>()
+    // By identity: many requests are data classes, and two equal ones in flight at once (the
+    // same sendMessage twice) must not share a start time.
+    val starts: MutableMap<Request<*>, Long> = Collections.synchronizedMap(IdentityHashMap())
 
     addMiddleware {
         doOnBeforeCallFactoryMakeCall { request, _ ->
@@ -285,7 +367,7 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
                             val userId = user?.id?.chatId?.long ?: 0L
                             val ctx = activeContextForUser(userId)
                                 ?: UpdateContext.from(
-                                    updateId = nextUpdateId(jdbcUrl),
+                                    updateId = nextUpdateId(),
                                     user = user,
                                 )
                             rememberPending(update.updateId.long, ctx)
@@ -334,7 +416,6 @@ fun clickHouseExceptionsHandler(
     jdbcUrl: String = System.getenv("CLICKHOUSE_JDBC_URL")
         ?: error("CLICKHOUSE_JDBC_URL env var is not set"),
 ): suspend (Throwable) -> Unit {
-    loadDriver()
     return { throwable ->
         writeRow(
             jdbcUrl,

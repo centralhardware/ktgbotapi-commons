@@ -20,8 +20,16 @@ import dev.inmo.tgbotapi.types.message.abstracts.ChatContentMessage
 import dev.inmo.tgbotapi.types.message.content.PhotoContent
 import dev.inmo.tgbotapi.types.message.content.TextContent
 import dev.inmo.tgbotapi.utils.row
+import dev.inmo.tgbotapi.types.message.abstracts.FromUserMessage
+import dev.inmo.tgbotapi.types.message.abstracts.Message
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Wait-based conversation DSL for ktgbotapi bots.
@@ -52,11 +60,28 @@ sealed interface Parsed<out T> {
 private fun String.orCancel(): String =
     if (trim() == CANCEL) throw ConversationCancelledException() else this
 
-private suspend fun BehaviourContext.nextText(chatId: IdChatIdentifier): String =
-    waitTextMessage()
-        .filter { it.chat.id == chatId }
+/**
+ * The user a conversation belongs to, set by [startConversation]. Inside one, the `wait*`
+ * helpers take replies (and [CANCEL], and button presses) from that user only, so in a group
+ * another member can neither answer nor cancel it.
+ */
+class ConversationUser(val userId: Long) : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<ConversationUser>
+}
+
+private suspend fun conversationUser(): Long? = currentCoroutineContext()[ConversationUser]?.userId
+
+/** True when [message] is from the conversation's user, or no conversation user is set. */
+private fun Message.isFrom(userId: Long?): Boolean =
+    userId == null || (this as? FromUserMessage)?.from?.id?.chatId?.long == userId
+
+private suspend fun BehaviourContext.nextText(chatId: IdChatIdentifier): String {
+    val userId = conversationUser()
+    return waitTextMessage()
+        .filter { it.chat.id == chatId && it.isFrom(userId) }
         .first()
         .content.text.orCancel().trim()
+}
 
 /**
  * Run [block] as a tracked conversation for [userId].
@@ -65,28 +90,34 @@ private suspend fun BehaviourContext.nextText(chatId: IdChatIdentifier): String 
  * [ConversationState]. When it finishes — normally, via [ConversationCancelledException], or
  * because the job was cancelled through [ConversationState.cancel] — the registration is removed.
  *
- * If a conversation is already running for [userId] the freshly launched job is cancelled
- * immediately, so callers should check [ConversationState.hasActive] first to inform the user
- * instead of silently dropping the second attempt.
+ * If a conversation is already running for [userId] the new one never runs [block], so
+ * callers should check [ConversationState.hasActive] first to inform the user instead of
+ * silently dropping the second attempt. Returns whether this conversation was started.
+ *
+ * Inside [block] the `wait*` helpers only accept replies from [userId] (see [ConversationUser]).
  */
 suspend fun BehaviourContext.startConversation(
     userId: Long,
     block: suspend BehaviourContext.() -> Unit,
-) {
-    val job = createSubContextAndDoAsynchronouslyWithUpdatesFilter(
+): Boolean {
+    // The job must be registered before the block runs: a block that finished first would
+    // otherwise unregister nothing and leave its entry behind for good.
+    val registered = CompletableDeferred<Boolean>()
+    lateinit var job: Job
+    job = createSubContextAndDoAsynchronouslyWithUpdatesFilter(
         updatesUpstreamFlow = allUpdatesFlow
     ) {
+        if (!registered.await()) return@createSubContextAndDoAsynchronouslyWithUpdatesFilter
         try {
-            block()
-        } catch (e: ConversationCancelledException) {
-            throw e
+            withContext(ConversationUser(userId)) { block() }
         } finally {
-            ConversationState.end(userId)
+            ConversationState.end(userId, job)
         }
     }
-    if (!ConversationState.start(userId, job)) {
-        job.cancel()
-    }
+    val started = ConversationState.start(userId, job)
+    registered.complete(started)
+    if (!started) job.cancel()
+    return started
 }
 
 /** Build a one-button-per-row reply keyboard from [options]. */
@@ -170,21 +201,28 @@ suspend fun BehaviourContext.waitEnum(
 }
 
 /**
- * Send [prompt] with a yes/no reply keyboard and return whether the user picked [yes].
- * [CANCEL] aborts.
+ * Send [prompt] with a yes/no reply keyboard and return whether the user picked [yes]. Anything
+ * other than [yes] or [no] shows [invalidMessage] and asks again. [CANCEL] aborts.
  */
 suspend fun BehaviourContext.waitConfirmation(
     chatId: IdChatIdentifier,
     prompt: String,
-    yes: String = "да",
-    no: String = "нет",
+    yes: String = "Yes",
+    no: String = "No",
+    invalidMessage: String = "Choose one of the offered options",
 ): Boolean {
     val keyboard = replyKeyboard {
         row { simpleButton(yes) }
         row { simpleButton(no) }
     }
-    send(chatId, text = prompt, replyMarkup = keyboard)
-    return nextText(chatId) == yes
+    while (true) {
+        send(chatId, text = prompt, replyMarkup = keyboard)
+        when (nextText(chatId)) {
+            yes -> return true
+            no -> return false
+            else -> sendMessage(chatId, invalidMessage)
+        }
+    }
 }
 
 /**
@@ -250,7 +288,8 @@ suspend fun BehaviourContext.waitPhoto(
 ): ChatContentMessage<PhotoContent>? {
     while (true) {
         sendMessage(chatId, prompt)
-        val message = waitContentMessage().filter { it.chat.id == chatId }.first()
+        val userId = conversationUser()
+        val message = waitContentMessage().filter { it.chat.id == chatId && it.isFrom(userId) }.first()
         val content = message.content
         if (content is TextContent) {
             val text = content.text.trim()
@@ -315,8 +354,12 @@ suspend fun BehaviourContext.waitInlineChoice(
     prefix: String,
 ): String? {
     val sent = sendMessage(chatId, prompt, replyMarkup = keyboard)
+    val userId = conversationUser()
     val query = waitMessageDataCallbackQuery()
-        .first { it.message.messageId == sent.messageId && it.data.startsWith("$prefix|") }
+        .first {
+            it.message.messageId == sent.messageId && it.data.startsWith("$prefix|") &&
+                (userId == null || it.user.id.chatId.long == userId)
+        }
     runCatching { answerCallbackQuery(query) }
     runCatching { editMessageReplyMarkup(chatId = sent.chat.id, messageId = sent.messageId, replyMarkup = null) }
     return query.data.removePrefix("$prefix|").takeIf { it.isNotEmpty() }
