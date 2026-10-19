@@ -1,6 +1,5 @@
 package me.centralhardware.telegram.middleware
 
-import com.github.f4b6a3.tsid.TsidCreator
 import dev.inmo.kslog.common.KSLog
 import dev.inmo.kslog.common.error
 import dev.inmo.kslog.common.info
@@ -95,12 +94,19 @@ private data class UpdateContext(
     }
 }
 
-/**
- * Update ids are TSIDs (time-sorted 64-bit ids, Snowflake-shaped), made locally: unique across
- * bot instances in practice and no database round trip (they used to come from
- * `SELECT generateSnowflakeID()`, a connection per update).
- */
-private fun nextUpdateId(): Long = TsidCreator.getTsid().toLong()
+// Distributed-safe unique id via ClickHouse's built-in Snowflake generator (timestamp_ms +
+// machine_id + intra-ms counter). Available since ClickHouse 23.6. Each call returns a fresh id
+// regardless of how many bot instances share the database.
+private fun nextUpdateId(jdbcUrl: String): Long = runCatching {
+    DriverManager.getConnection(jdbcUrl).use { conn ->
+        conn.prepareStatement("SELECT generateSnowflakeID()").use { ps ->
+            ps.executeQuery().use { rs -> if (rs.next()) rs.getLong(1) else 0L }
+        }
+    }
+}.getOrElse {
+    KSLog.error("Failed to fetch next update_id", it)
+    0L
+}
 
 @OptIn(Warning::class, RiskFeature::class)
 private fun Update.extractUser(): User? = when (this) {
@@ -299,7 +305,7 @@ fun clickHouseRequestIdContext(
         // get(), not remove(): one Update can match several triggers (e.g. onCommand + onText) and
         // each invokes subcontextInitialAction independently — they must all see the same id.
         val ctx = pendingContexts[update.updateId.long]
-            ?: UpdateContext.from(nextUpdateId(), update.extractUser())
+            ?: UpdateContext.from(nextUpdateId(jdbcUrl), update.extractUser())
         val job = coroutineContext[Job]
         if (job != null) {
             jobToContext[job] = ctx
@@ -323,6 +329,7 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
     jdbcUrl: String = System.getenv("CLICKHOUSE_JDBC_URL")
         ?: error("CLICKHOUSE_JDBC_URL env var is not set"),
 ) {
+    loadDriver()
     // By identity: many requests are data classes, and two equal ones in flight at once (the
     // same sendMessage twice) must not share a start time.
     val starts: MutableMap<Request<*>, Long> = Collections.synchronizedMap(IdentityHashMap())
@@ -348,7 +355,7 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.clickHouseLogging(
                             val userId = user?.id?.chatId?.long ?: 0L
                             val ctx = activeContextForUser(userId)
                                 ?: UpdateContext.from(
-                                    updateId = nextUpdateId(),
+                                    updateId = nextUpdateId(jdbcUrl),
                                     user = user,
                                 )
                             rememberPending(update.updateId.long, ctx)

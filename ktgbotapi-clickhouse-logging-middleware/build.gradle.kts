@@ -10,7 +10,6 @@ dependencies {
     implementation("dev.inmo:kslog:2.1.0")
     implementation("com.clickhouse:clickhouse-jdbc:0.10.0")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
-    implementation("com.github.f4b6a3:tsid-creator:5.2.6")
 
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
