@@ -10,6 +10,13 @@ dependencies {
     implementation("dev.inmo:kslog:2.1.0")
     implementation("com.clickhouse:clickhouse-jdbc:0.10.0")
     implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
+
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 publishing {

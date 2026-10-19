@@ -29,25 +29,31 @@ suspend fun longPolling(
     block: BehaviourContextReceiver<Unit>,
 ): Pair<TelegramBot, Job> {
     configureLogger(botName)
+    // ClickHouse logging is optional: a bot without CLICKHOUSE_JDBC_URL logs to stdout only.
+    val clickHouseUrl = AppConfig.clickHouseJdbcUrl()
+    if (clickHouseUrl == null) KSLog.info("CLICKHOUSE_JDBC_URL not set: ClickHouse logging off")
+    // Built once; called for every exception a handler throws.
+    val clickHouseExceptions = clickHouseUrl?.let { clickHouseExceptionsHandler(botName, it) }
+    val requestIdContext = clickHouseUrl?.let { clickHouseRequestIdContext(it) }
     val res =
         telegramBotWithBehaviourAndLongPolling(
             AppConfig.botToken(),
             CoroutineScope(Dispatchers.IO),
             defaultExceptionsHandler = { t: Throwable ->
                 KSLog.warning("", t)
-                clickHouseExceptionsHandler(botName)
+                clickHouseExceptions?.invoke(t)
             },
             autoSkipTimeoutExceptions = true,
             builder = {
                 includeMiddlewares {
                     addMiddleware { ExceptionsThrottlerTelegramBotMiddleware() }
                     stdoutLogging()
-                    clickHouseLogging(botName)
+                    clickHouseUrl?.let { clickHouseLogging(botName, it) }
                     middlewares.invoke(this)
                 }
             },
             subcontextInitialAction = { update ->
-                clickHouseRequestIdContext().invoke(this, update)
+                requestIdContext?.invoke(this, update)
                 subcontextInitialAction.invoke(this, update)
             },
             block = block,

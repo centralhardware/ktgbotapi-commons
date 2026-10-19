@@ -14,6 +14,9 @@ import kotlinx.serialization.json.JsonObject
  * [UnknownUpdate] containing an [AccessDeniedException], effectively preventing the bot from
  * processing the update.
  *
+ * An update with no resolvable user is passed to the checker as `null`, so the checker decides;
+ * [EnvironmentVariableUserAccessChecker] denies it (fail closed).
+ *
  * @param accessChecker The [UserAccessChecker] implementation to use for checking user access.
  */
 @OptIn(Warning::class)
@@ -27,25 +30,19 @@ fun TelegramBotMiddlewaresPipelinesHandler.Builder.restrictAccess(
 
                 else -> {
                     @Suppress("UNCHECKED_CAST")
-                    (result as? ArrayList<Update>)?.map { update ->
-                        val userId = update.chatId()
-                        if (userId == null) {
-                            KSLog.info("Update type ${update::class.simpleName} does not support")
-                            return@map update
-                        }
-
-                        if (accessChecker.checkAccess(userId)) {
-                            update
-                        } else {
-                            KSLog.info(
-                                "Filtering out ${update::class.simpleName} from unauthorized user $userId"
-                            )
-                            UnknownUpdate(update.updateId, JsonObject(mapOf()), AccessDeniedException())
-                        }
-                    } ?: result
+                    (result as? ArrayList<Update>)?.map { update -> filterUpdate(update, accessChecker) }
+                        ?: result
                 }
             }
         }
     }
     KSLog.info("Initialize restrict access middleware with access checker: ${accessChecker::class.simpleName}")
+}
+
+/** [update] itself when [accessChecker] lets its user in, a denied placeholder otherwise. */
+internal fun filterUpdate(update: Update, accessChecker: UserAccessChecker): Update {
+    val userId = update.chatId()
+    if (accessChecker.checkAccess(userId)) return update
+    KSLog.info("Filtering out ${update::class.simpleName} from unauthorized user ${userId ?: "(none)"}")
+    return UnknownUpdate(update.updateId, JsonObject(mapOf()), AccessDeniedException())
 }
