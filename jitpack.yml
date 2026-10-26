@@ -1,2 +1,6 @@
 jdk:
   - openjdk21
+# JitPack's "openjdk21" alias now points at a missing sdkman candidate (21.0.0.0+35-open); pin a real one.
+before_install:
+  - sdk install java 21.0.2-open
+  - sdk use java 21.0.2-open

@@ -7,12 +7,14 @@ plugins {
 group = "me.centralhardware"
 
 val ktgbotapiVersion = "37.1.0"
+val ktorVersion = "3.6.0"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.21.0")
 
     api("dev.inmo:kslog:2.1.0")
     api("dev.inmo:tgbotapi:$ktgbotapiVersion")
+    api("io.ktor:ktor-client-okhttp:$ktorVersion")
     api(project(":ktgbotapi-conversation"))
     api(project(":ktgbotapi-stdout-logging-middleware"))
     api(project(":ktgbotapi-clickhouse-logging-middleware"))
