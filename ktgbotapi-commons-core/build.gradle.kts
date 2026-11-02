@@ -7,7 +7,7 @@ plugins {
 group = "me.centralhardware"
 
 val ktgbotapiVersion = "37.1.0"
-val ktorVersion = "3.6.0"
+val ktorVersion = "3.6.1"
 
 dependencies {
     implementation("org.apache.commons:commons-lang3:3.21.0")
