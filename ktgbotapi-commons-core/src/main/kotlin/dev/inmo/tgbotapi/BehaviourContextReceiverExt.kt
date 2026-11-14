@@ -13,6 +13,8 @@ import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContextReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.CustomBehaviourContextAndTypeReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.telegramBotWithBehaviourAndLongPolling
 import dev.inmo.tgbotapi.types.update.abstracts.Update
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -45,6 +47,8 @@ suspend fun longPolling(
             },
             autoSkipTimeoutExceptions = true,
             builder = {
+                // Name the engine instead of relying on tgbotapi's default (Java) or classpath order.
+                client = HttpClient(OkHttp)
                 includeMiddlewares {
                     addMiddleware { ExceptionsThrottlerTelegramBotMiddleware() }
                     stdoutLogging()
