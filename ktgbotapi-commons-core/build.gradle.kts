@@ -10,7 +10,7 @@ val ktgbotapiVersion = "37.1.0"
 val ktorVersion = "3.6.1"
 
 dependencies {
-    implementation("org.apache.commons:commons-lang3:3.21.0")
+    implementation("org.apache.commons:commons-lang3:3.22.0")
 
     api("dev.inmo:kslog:2.1.0")
     api("dev.inmo:tgbotapi:$ktgbotapiVersion")
