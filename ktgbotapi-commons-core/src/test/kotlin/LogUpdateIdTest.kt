@@ -1,6 +1,6 @@
 import com.sun.net.httpserver.HttpServer
 import dev.inmo.tgbotapi.LogUpdateId
-import dev.inmo.tgbotapi.WebhookServer
+import dev.inmo.tgbotapi.listenRelayWebhooks
 import dev.inmo.tgbotapi.bot.ktor.telegramBot
 import dev.inmo.tgbotapi.extensions.api.send.reply
 import dev.inmo.tgbotapi.extensions.api.send.sendMessage
@@ -58,22 +58,26 @@ class LogUpdateIdTest {
         }
         // Updates arrive the way the relay sends them: through the webhook route.
         val port = ServerSocket(0).use { it.localPort }
-        WebhookServer.start(ctx, filter.asUpdateReceiver, port)
-        fun post(body: String, logId: Long? = null): Int {
+        val webhooks = listenRelayWebhooks(ctx, filter.asUpdateReceiver, port)
+        fun post(updateId: Long, logId: Long? = null): Int {
+            val body = update(updateId)
             val c = URI("http://127.0.0.1:$port/telegram/update").toURL().openConnection() as HttpURLConnection
             c.requestMethod = "POST"; c.doOutput = true
             c.setRequestProperty("Content-Type", "application/json")
-            logId?.let { c.setRequestProperty(LogUpdateId.HEADER, it.toString()) }
+            logId?.let {
+                c.setRequestProperty(LogUpdateId.HEADER, it.toString())
+                c.setRequestProperty(LogUpdateId.UPDATE_HEADER, updateId.toString())
+            }
             c.outputStream.use { it.write(body.toByteArray()) }
             return c.responseCode
         }
 
-        assertEquals(200, post(update(10), logId = 777))
+        assertEquals(200, post(10, logId = 777))
         val first = listOf(seen.poll(10, TimeUnit.SECONDS), seen.poll(10, TimeUnit.SECONDS))
         assertEquals(listOf("sendMessage=777", "sendMessage=777"), first)
 
         // An update the relay gave no id: no header.
-        assertEquals(200, post(update(11)))
+        assertEquals(200, post(11))
         assertEquals("sendMessage=none", seen.poll(10, TimeUnit.SECONDS))
 
         // A call outside any handler: no header.
@@ -81,6 +85,7 @@ class LogUpdateIdTest {
         assertEquals("sendMessage=none", seen.poll(10, TimeUnit.SECONDS))
 
         server.stop(0)
+        webhooks.stop(0, 0)
         ctx.coroutineContext[Job]?.cancel()
     }
 }

@@ -8,8 +8,8 @@ import dev.inmo.micro_utils.common.Warning
 import dev.inmo.tgbotapi.bot.TelegramBot
 import dev.inmo.tgbotapi.bot.ktor.middlewares.TelegramBotMiddlewaresPipelinesHandler
 import dev.inmo.tgbotapi.bot.ktor.middlewares.builtins.ExceptionsThrottlerTelegramBotMiddleware
-import dev.inmo.tgbotapi.extensions.utils.updates.retrieving.includeWebhookHandlingInRoute
 import dev.inmo.tgbotapi.updateshandlers.UpdateReceiver
+import dev.inmo.tgbotapi.extensions.utils.updates.retrieving.startListenWebhooks
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContext
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContextReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.CustomBehaviourContextAndTypeReceiver
@@ -22,15 +22,9 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.header
-import io.ktor.server.request.receiveText
-import io.ktor.server.routing.route
 import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.application.install
 import io.ktor.server.application.call
-import io.ktor.server.plugins.doublereceive.DoubleReceive
-import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,10 +33,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.long
 import me.centralhardware.telegram.middleware.clickHouseExceptionsHandler
 import me.centralhardware.telegram.middleware.stdoutLogging
 import java.util.concurrent.ConcurrentHashMap
@@ -51,14 +41,16 @@ import java.util.concurrent.ConcurrentHashMap
  * Carries tg-webhook-relay's log id from an incoming update onto every Bot API call
  * the handler of that update makes.
  *
- * The relay forwards each update with `X-Log-Update-Id`; [webhook] remembers it by
- * Telegram update id, [subcontextAction] binds it to the handler's coroutine job,
+ * The relay forwards each update with `X-Log-Update-Id` (and its Telegram id in
+ * `X-Telegram-Update-Id`); [webhook] remembers one by the other, [subcontextAction] binds it to the handler's coroutine job,
  * and [plugin] puts it back on each outgoing request made from that job (or its
  * children). The relay logs those calls under the same id, so one update and
  * everything its handler did share one `update_id` in `bot_requests`.
  */
 object LogUpdateId {
     const val HEADER = "X-Log-Update-Id"
+    /** Sent by the relay next to [HEADER], so the body never has to be read twice. */
+    const val UPDATE_HEADER = "X-Telegram-Update-Id"
     private const val PENDING_TTL_MS = 60_000L
 
     private val pending = ConcurrentHashMap<Long, Long>()
@@ -96,8 +88,6 @@ object LogUpdateId {
         }
     }
 }
-
-private val updateJson = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false }
 
 /**
  * Starts a bot behind tg-webhook-relay: Bot API calls go through the relay (which logs
@@ -147,41 +137,34 @@ suspend fun webhook(
         },
         block = block,
     )
-    WebhookServer.start(context, filter.asUpdateReceiver)
+    listenRelayWebhooks(context, filter.asUpdateReceiver)
     HealthCheck.register(botName, bot)
     KSLog.info("$botName started (webhook via $relayUrl)")
     return bot to context.coroutineContext.job
 }
 
 /**
- * ktgbotapi's own webhook route ([includeWebhookHandlingInRoute]: parsing, media-group
- * merging, 200/500 answers), with one interceptor in front that hands the relay's log
- * id to [LogUpdateId] before ktgbotapi reads the body (DoubleReceive lets both read
- * it). The relay is on the private network, so there is no secret to check.
+ * ktgbotapi's own webhook server ([startListenWebhooks]) on `/telegram/update`. The only
+ * addition is one interceptor on its application that maps the relay's
+ * `X-Telegram-Update-Id` to its `X-Log-Update-Id` for [LogUpdateId].
  */
-internal object WebhookServer {
-    @Volatile private var server: EmbeddedServer<*, *>? = null
-
-    @Synchronized
-    fun start(
-        scope: CoroutineScope,
-        onUpdate: UpdateReceiver<Update>,
-        port: Int = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080,
-    ) {
-        if (server != null) return
-        server = embeddedServer(CIO, port = port) {
-            install(DoubleReceive)
-            routing {
-                route("/telegram/update") {
-                    intercept(ApplicationCallPipeline.Plugins) {
-                        val logId = call.request.header(LogUpdateId.HEADER)?.toLongOrNull() ?: return@intercept
-                        runCatching { updateJson.parseToJsonElement(call.receiveText()).jsonObject["update_id"]!!.jsonPrimitive.long }
-                            .onSuccess { LogUpdateId.remember(it, logId) }
-                    }
-                    includeWebhookHandlingInRoute(scope, { KSLog.warning("webhook update failed", it) }, block = onUpdate)
-                }
-            }
-        }.start(wait = false)
+internal fun listenRelayWebhooks(
+    scope: CoroutineScope,
+    receiver: UpdateReceiver<Update>,
+    port: Int = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080,
+): EmbeddedServer<*, *> =
+    startListenWebhooks(
+        listenPort = port,
+        engineFactory = CIO,
+        exceptionsHandler = { KSLog.warning("webhook update failed", it) },
+        listenRoute = "/telegram/update",
+        scope = scope,
+        block = receiver,
+    ).also { server ->
+        server.application.intercept(ApplicationCallPipeline.Plugins) {
+            val updateId = call.request.header(LogUpdateId.UPDATE_HEADER)?.toLongOrNull()
+            val logId = call.request.header(LogUpdateId.HEADER)?.toLongOrNull()
+            if (updateId != null && logId != null) LogUpdateId.remember(updateId, logId)
+        }
         KSLog.info("webhook receiver listening on :$port/telegram/update")
     }
-}

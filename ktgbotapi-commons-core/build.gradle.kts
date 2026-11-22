@@ -16,7 +16,6 @@ dependencies {
     api("dev.inmo:tgbotapi:$ktgbotapiVersion")
     api("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
-    implementation("io.ktor:ktor-server-double-receive:$ktorVersion")
     api(project(":ktgbotapi-conversation"))
     api(project(":ktgbotapi-stdout-logging-middleware"))
     api(project(":ktgbotapi-clickhouse-logging-middleware"))
