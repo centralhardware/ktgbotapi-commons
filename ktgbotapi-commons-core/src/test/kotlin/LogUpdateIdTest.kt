@@ -28,7 +28,7 @@ class LogUpdateIdTest {
         "chat":{"id":1,"type":"private","first_name":"u"},"from":{"id":1,"is_bot":false,"first_name":"u"},"text":"hi"}}"""
 
     @Test
-    fun `calls made by a handler carry the log id of its update, nested launches too`() = runBlocking {
+    fun `calls made by a handler carry the log id of its update, nested launches too`(): Unit = runBlocking {
         // Fake Bot API: records the header of every call.
         val seen = LinkedBlockingQueue<String>()
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
