@@ -19,6 +19,8 @@ dependencies {
     api(project(":ktgbotapi-stdout-logging-middleware"))
     api(project(":ktgbotapi-clickhouse-logging-middleware"))
     api(project(":ktgbotapi-restrict-access-middleware"))
+
+    testImplementation(kotlin("test"))
 }
 
 tasks.test {

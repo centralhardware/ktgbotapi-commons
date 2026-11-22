@@ -51,6 +51,24 @@ suspend fun main() {
 }
 ```
 
+### Behind tg-webhook-relay
+
+```kotlin
+suspend fun main() {
+    webhook("myBot") {
+        onText { reply(it, "hi") }
+    }.second.join()
+}
+```
+
+`webhook` replaces `longPolling` for bots that sit behind
+[tg-webhook-relay](https://github.com/centralhardware/tg-webhook-relay). Bot API calls go
+through the relay (`TELEGRAM_RELAY_URL`), and the relay logs every call to ClickHouse.
+Updates arrive from the relay on `POST /telegram/update` (`WEBHOOK_PORT`, default 8080).
+Each update's `X-Log-Update-Id` is carried onto every call its handler makes, so the relay
+logs them under one `update_id`. The ClickHouse logging middleware is not installed here;
+only handler exceptions are still written directly (when `CLICKHOUSE_JDBC_URL` is set).
+
 ### Tracing Events
 
 ```kotlin
