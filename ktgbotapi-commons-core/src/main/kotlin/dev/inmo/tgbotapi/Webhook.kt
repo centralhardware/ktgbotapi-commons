@@ -1,6 +1,5 @@
 package dev.inmo.tgbotapi
 
-import com.sun.net.httpserver.HttpServer
 import dev.inmo.kslog.common.KSLog
 import dev.inmo.kslog.common.configureLogger
 import dev.inmo.kslog.common.info
@@ -21,6 +20,15 @@ import dev.inmo.tgbotapi.updateshandlers.FlowsUpdatesFilter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.request.header
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respond
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,14 +37,11 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import me.centralhardware.telegram.middleware.clickHouseExceptionsHandler
 import me.centralhardware.telegram.middleware.stdoutLogging
-import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 
 /**
  * Carries tg-webhook-relay's log id from an incoming update onto every Bot API call
@@ -152,36 +157,32 @@ suspend fun webhook(
 }
 
 private object WebhookServer {
-    @Volatile private var server: HttpServer? = null
+    @Volatile private var server: EmbeddedServer<*, *>? = null
 
     @Synchronized
     fun start(secret: String, onUpdate: suspend (Update) -> Unit) {
         if (server != null) return
         val port = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080
-        server = HttpServer.create(InetSocketAddress(port), 0).apply {
-            executor = Executors.newFixedThreadPool(4)
-            createContext("/telegram/update") { ex ->
-                val code = try {
-                    when {
-                        ex.requestMethod != "POST" -> 405
-                        ex.requestHeaders.getFirst("X-Telegram-Bot-Api-Secret-Token") != secret -> 401
-                        else -> {
-                            val update = updateJson.decodeFromString(UpdateDeserializationStrategy, ex.requestBody.readBytes().decodeToString())
-                            ex.requestHeaders.getFirst(LogUpdateId.HEADER)?.toLongOrNull()
-                                ?.let { LogUpdateId.remember(update.updateId.long, it) }
-                            runBlocking { onUpdate(update) }
-                            200
-                        }
+        server = embeddedServer(CIO, port = port) {
+            routing {
+                post("/telegram/update") {
+                    if (call.request.header("X-Telegram-Bot-Api-Secret-Token") != secret) {
+                        call.respond(HttpStatusCode.Unauthorized); return@post
                     }
-                } catch (e: Exception) {
-                    KSLog.warning("webhook update rejected", e)
-                    400
+                    // A non-2xx makes the relay retry this update, in order.
+                    val update = try {
+                        updateJson.decodeFromString(UpdateDeserializationStrategy, call.receiveText())
+                    } catch (e: Exception) {
+                        KSLog.warning("webhook update rejected", e)
+                        call.respond(HttpStatusCode.BadRequest); return@post
+                    }
+                    call.request.header(LogUpdateId.HEADER)?.toLongOrNull()
+                        ?.let { LogUpdateId.remember(update.updateId.long, it) }
+                    onUpdate(update)
+                    call.respond(HttpStatusCode.OK)
                 }
-                ex.sendResponseHeaders(code, -1)
-                ex.close()
             }
-            start()
-        }
+        }.start(wait = false)
         KSLog.info("webhook receiver listening on :$port/telegram/update")
     }
 }
