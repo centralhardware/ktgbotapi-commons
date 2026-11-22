@@ -20,13 +20,11 @@ import dev.inmo.tgbotapi.updateshandlers.FlowsUpdatesFilter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.header
 import io.ktor.server.request.receiveText
-import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.install
@@ -47,7 +45,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import me.centralhardware.telegram.middleware.clickHouseExceptionsHandler
 import me.centralhardware.telegram.middleware.stdoutLogging
-import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -100,11 +97,6 @@ object LogUpdateId {
     }
 }
 
-/** hex(sha256("tg-webhook-relay:" + token)) — the secret tg-webhook-relay sends. */
-fun relaySecret(token: String): String =
-    MessageDigest.getInstance("SHA-256").digest("tg-webhook-relay:$token".toByteArray())
-        .joinToString("") { "%02x".format(it) }
-
 private val updateJson = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false }
 
 /**
@@ -155,7 +147,7 @@ suspend fun webhook(
         },
         block = block,
     )
-    WebhookServer.start(relaySecret(token), context, filter.asUpdateReceiver)
+    WebhookServer.start(context, filter.asUpdateReceiver)
     HealthCheck.register(botName, bot)
     KSLog.info("$botName started (webhook via $relayUrl)")
     return bot to context.coroutineContext.job
@@ -163,16 +155,15 @@ suspend fun webhook(
 
 /**
  * ktgbotapi's own webhook route ([includeWebhookHandlingInRoute]: parsing, media-group
- * merging, 200/500 answers), with one interceptor in front: it checks the relay's
- * secret and hands the relay's log id to [LogUpdateId] before ktgbotapi reads the
- * body. DoubleReceive lets both read it.
+ * merging, 200/500 answers), with one interceptor in front that hands the relay's log
+ * id to [LogUpdateId] before ktgbotapi reads the body (DoubleReceive lets both read
+ * it). The relay is on the private network, so there is no secret to check.
  */
 internal object WebhookServer {
     @Volatile private var server: EmbeddedServer<*, *>? = null
 
     @Synchronized
     fun start(
-        secret: String,
         scope: CoroutineScope,
         onUpdate: UpdateReceiver<Update>,
         port: Int = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080,
@@ -183,10 +174,6 @@ internal object WebhookServer {
             routing {
                 route("/telegram/update") {
                     intercept(ApplicationCallPipeline.Plugins) {
-                        if (call.request.header("X-Telegram-Bot-Api-Secret-Token") != secret) {
-                            call.respond(HttpStatusCode.Unauthorized)
-                            return@intercept finish()
-                        }
                         val logId = call.request.header(LogUpdateId.HEADER)?.toLongOrNull() ?: return@intercept
                         runCatching { updateJson.parseToJsonElement(call.receiveText()).jsonObject["update_id"]!!.jsonPrimitive.long }
                             .onSuccess { LogUpdateId.remember(it, logId) }
