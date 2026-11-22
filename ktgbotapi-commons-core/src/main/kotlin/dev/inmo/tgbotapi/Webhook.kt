@@ -8,14 +8,14 @@ import dev.inmo.micro_utils.common.Warning
 import dev.inmo.tgbotapi.bot.TelegramBot
 import dev.inmo.tgbotapi.bot.ktor.middlewares.TelegramBotMiddlewaresPipelinesHandler
 import dev.inmo.tgbotapi.bot.ktor.middlewares.builtins.ExceptionsThrottlerTelegramBotMiddleware
-import dev.inmo.tgbotapi.extensions.api.utils.updateHandlerWithMediaGroupsAdaptation
+import dev.inmo.tgbotapi.extensions.utils.updates.retrieving.includeWebhookHandlingInRoute
+import dev.inmo.tgbotapi.updateshandlers.UpdateReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContext
 import dev.inmo.tgbotapi.extensions.behaviour_builder.BehaviourContextReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.CustomBehaviourContextAndTypeReceiver
 import dev.inmo.tgbotapi.extensions.behaviour_builder.buildBehaviour
 import dev.inmo.tgbotapi.bot.ktor.telegramBot
 import dev.inmo.tgbotapi.types.update.abstracts.Update
-import dev.inmo.tgbotapi.types.update.abstracts.UpdateDeserializationStrategy
 import dev.inmo.tgbotapi.updateshandlers.FlowsUpdatesFilter
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -27,7 +27,11 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.header
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
-import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.application.install
+import io.ktor.server.application.call
+import io.ktor.server.plugins.doublereceive.DoubleReceive
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +42,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import me.centralhardware.telegram.middleware.clickHouseExceptionsHandler
 import me.centralhardware.telegram.middleware.stdoutLogging
 import java.security.MessageDigest
@@ -148,38 +155,43 @@ suspend fun webhook(
         },
         block = block,
     )
-    // Same media-group merging long polling does, so onMediaGroup keeps working.
-    val receiver = context.updateHandlerWithMediaGroupsAdaptation(filter.asUpdateReceiver)
-    WebhookServer.start(relaySecret(token)) { update -> receiver(update) }
+    WebhookServer.start(relaySecret(token), context, filter.asUpdateReceiver)
     HealthCheck.register(botName, bot)
     KSLog.info("$botName started (webhook via $relayUrl)")
     return bot to context.coroutineContext.job
 }
 
-private object WebhookServer {
+/**
+ * ktgbotapi's own webhook route ([includeWebhookHandlingInRoute]: parsing, media-group
+ * merging, 200/500 answers), with one interceptor in front: it checks the relay's
+ * secret and hands the relay's log id to [LogUpdateId] before ktgbotapi reads the
+ * body. DoubleReceive lets both read it.
+ */
+internal object WebhookServer {
     @Volatile private var server: EmbeddedServer<*, *>? = null
 
     @Synchronized
-    fun start(secret: String, onUpdate: suspend (Update) -> Unit) {
+    fun start(
+        secret: String,
+        scope: CoroutineScope,
+        onUpdate: UpdateReceiver<Update>,
+        port: Int = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080,
+    ) {
         if (server != null) return
-        val port = System.getenv("WEBHOOK_PORT")?.toIntOrNull() ?: 8080
         server = embeddedServer(CIO, port = port) {
+            install(DoubleReceive)
             routing {
-                post("/telegram/update") {
-                    if (call.request.header("X-Telegram-Bot-Api-Secret-Token") != secret) {
-                        call.respond(HttpStatusCode.Unauthorized); return@post
+                route("/telegram/update") {
+                    intercept(ApplicationCallPipeline.Plugins) {
+                        if (call.request.header("X-Telegram-Bot-Api-Secret-Token") != secret) {
+                            call.respond(HttpStatusCode.Unauthorized)
+                            return@intercept finish()
+                        }
+                        val logId = call.request.header(LogUpdateId.HEADER)?.toLongOrNull() ?: return@intercept
+                        runCatching { updateJson.parseToJsonElement(call.receiveText()).jsonObject["update_id"]!!.jsonPrimitive.long }
+                            .onSuccess { LogUpdateId.remember(it, logId) }
                     }
-                    // A non-2xx makes the relay retry this update, in order.
-                    val update = try {
-                        updateJson.decodeFromString(UpdateDeserializationStrategy, call.receiveText())
-                    } catch (e: Exception) {
-                        KSLog.warning("webhook update rejected", e)
-                        call.respond(HttpStatusCode.BadRequest); return@post
-                    }
-                    call.request.header(LogUpdateId.HEADER)?.toLongOrNull()
-                        ?.let { LogUpdateId.remember(update.updateId.long, it) }
-                    onUpdate(update)
-                    call.respond(HttpStatusCode.OK)
+                    includeWebhookHandlingInRoute(scope, { KSLog.warning("webhook update failed", it) }, block = onUpdate)
                 }
             }
         }.start(wait = false)
